@@ -1,0 +1,10 @@
+Package: com.catvnc.server
+Name: CatVNC
+Description: VNC server for iOS
+Depends: mobilesubstrate, preferenceloader
+Maintainer: 0x530c<0x530c@gmail.com>
+Author: 0x530c<0x530c@gmail.com>
+Section: Tweaks
+Architecture: iphoneos-arm
+Version: 1.6.2
+Installed-Size: 6708

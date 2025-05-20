@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ -e /usr/bin/catvnc ]; then
+  rm -rf /var/catvnc
+else
+  rm -rf /var/jb/var/catvnc
+fi
+
+killall -9 catvnc >/dev/null 2>&1
+
+echo 'prerm done'
