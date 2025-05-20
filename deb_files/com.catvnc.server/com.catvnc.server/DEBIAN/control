@@ -1,0 +1,11 @@
+Package: com.evil0ctal.server
+Section: Tweaks
+Installed-Size: 6708
+Maintainer: Evil0ctal<Evil0ctal1985@gmail.com>
+Architecture: iphoneos-arm64
+Version: 1.0.0
+Depends: mobilesubstrate, preferenceloader
+Description: iOS云控服务端
+Name: iOS云控
+Author: Evil0ctal<Evil0ctal1985@gmail.com>
+
