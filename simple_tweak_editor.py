@@ -169,6 +169,13 @@ class DebPackageGUI:
                 self.log(f"Error: could not write to '{control_path}': {e}")
                 return  # do not destroy window, allow retry
             edit_win.destroy()
+            # Set permissions for control, postinst, and prerm scripts to 755
+            debian_dir = os.path.join(folder_path, "DEBIAN")
+            for script in ["control", "postinst", "prerm"]:
+                script_path = os.path.join(debian_dir, script)
+                if os.path.exists(script_path):
+                    os.chmod(script_path, 0o755)
+                    self.log(f"Set 755 permissions for {script_path}")
             # Run dpkg-deb to build the package
             self.log(f"Repacking folder '{folder_path}' into '{os.path.basename(out_path)}'...")
             try:
