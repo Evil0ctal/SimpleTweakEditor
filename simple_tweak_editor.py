@@ -1,332 +1,212 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-SimpleTweakEditor - iOS越狱插件简易修改工具
-"""
-
 import os
-import sys
-import shutil
 import subprocess
-import tempfile
+import shutil
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
-from pathlib import Path
+from tkinter import filedialog, messagebox
 
 
-class SimpleTweakEditor:
+class DebPackageGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("SimpleTweakEditor - iOS越狱插件简易修改工具")
-        self.root.geometry("600x400")
+        self.root.title("iOS .deb Tweak Unpacker/Repacker")
 
-        # 设置变量
-        self.deb_path = tk.StringVar()
-        self.extract_path = tk.StringVar()
-        self.output_path = tk.StringVar()
+        # Buttons for Unpack and Repack actions
+        btn_frame = tk.Frame(root)
+        btn_frame.pack(pady=5)
+        tk.Button(btn_frame, text="Unpack .deb File", command=self.unpack_deb).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Repack Folder to .deb", command=self.repack_folder).pack(side=tk.LEFT, padx=5)
 
-        # 创建界面
-        self.create_widgets()
-
-        # 设置日志区域
-        self.log_area = tk.Text(self.root, height=10, wrap=tk.WORD)
-        self.log_area.grid(row=5, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
-
-        # 添加滚动条
-        scrollbar = tk.Scrollbar(self.root, command=self.log_area.yview)
-        scrollbar.grid(row=5, column=3, sticky="ns")
-        self.log_area.config(yscrollcommand=scrollbar.set)
-
-        # 设置网格权重
-        self.root.grid_rowconfigure(5, weight=1)
-        self.root.grid_columnconfigure(1, weight=1)
-
-    def create_widgets(self):
-        # 第一行: 选择deb文件
-        ttk.Label(self.root, text="选择DEB文件:").grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        ttk.Entry(self.root, textvariable=self.deb_path, width=50).grid(row=0, column=1, padx=5, pady=10, sticky="ew")
-        ttk.Button(self.root, text="浏览...", command=self.browse_deb).grid(row=0, column=2, padx=5, pady=10)
-
-        # 第二行: 解包路径
-        ttk.Label(self.root, text="解包路径:").grid(row=1, column=0, padx=10, pady=10, sticky="w")
-        ttk.Entry(self.root, textvariable=self.extract_path, width=50).grid(row=1, column=1, padx=5, pady=10,
-                                                                            sticky="ew")
-        ttk.Button(self.root, text="浏览...", command=self.browse_extract).grid(row=1, column=2, padx=5, pady=10)
-
-        # 第三行: 解包按钮
-        ttk.Button(self.root, text="解包DEB文件", command=self.extract_deb).grid(row=2, column=0, columnspan=3, padx=10,
-                                                                                 pady=10)
-
-        # 第四行: 输出deb路径
-        ttk.Label(self.root, text="输出DEB路径:").grid(row=3, column=0, padx=10, pady=10, sticky="w")
-        ttk.Entry(self.root, textvariable=self.output_path, width=50).grid(row=3, column=1, padx=5, pady=10,
-                                                                           sticky="ew")
-        ttk.Button(self.root, text="浏览...", command=self.browse_output).grid(row=3, column=2, padx=5, pady=10)
-
-        # 第五行: 重新打包按钮
-        ttk.Button(self.root, text="重新打包为DEB文件", command=self.repack_deb).grid(row=4, column=0, columnspan=3,
-                                                                                      padx=10, pady=10)
+        # Logging text area with scrollbar
+        log_frame = tk.Frame(root)
+        log_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.log_text = tk.Text(log_frame, height=15, width=80)
+        self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll = tk.Scrollbar(log_frame, command=self.log_text.yview)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.log_text.configure(yscrollcommand=scroll.set)
+        self.log_text.insert(tk.END, "Ready.\n")
+        self.log_text.configure(state=tk.NORMAL)
 
     def log(self, message):
-        """向日志区域添加消息"""
-        self.log_area.insert(tk.END, message + "\n")
-        self.log_area.see(tk.END)
-        self.root.update()
+        """Append a message to the log text area."""
+        self.log_text.configure(state=tk.NORMAL)
+        self.log_text.insert(tk.END, message + "\n")
+        self.log_text.see(tk.END)
+        self.log_text.configure(state=tk.NORMAL)
 
-    def browse_deb(self):
-        """浏览选择deb文件"""
-        filename = filedialog.askopenfilename(
-            title="选择DEB文件",
-            filetypes=[("DEB文件", "*.deb"), ("所有文件", "*.*")]
+    def unpack_deb(self):
+        """Handle the Unpack button action: select a .deb and unpack it."""
+        deb_path = filedialog.askopenfilename(
+            title="Select a .deb package to unpack",
+            filetypes=[("Debian Package", "*.deb"), ("All Files", "*.*")]
         )
-        if filename:
-            self.deb_path.set(filename)
-            # 自动设置默认的解包路径
-            default_extract = os.path.join(os.path.dirname(filename),
-                                           os.path.basename(filename).replace('.deb', '_extracted'))
-            self.extract_path.set(default_extract)
-            # 设置默认输出路径
-            default_output = os.path.join(os.path.dirname(filename),
-                                          os.path.basename(filename).replace('.deb', '_modified.deb'))
-            self.output_path.set(default_output)
+        if not deb_path:
+            return  # user canceled dialog
+        output_dir = filedialog.askdirectory(title="Select output directory for unpacking")
+        if not output_dir:
+            return  # canceled
 
-    def browse_extract(self):
-        """浏览选择解包路径"""
-        directory = filedialog.askdirectory(title="选择解包目录")
-        if directory:
-            self.extract_path.set(directory)
+        # Prepare target directory for unpacking (folder named after the .deb file)
+        deb_name = os.path.splitext(os.path.basename(deb_path))[0]
+        target_dir = os.path.join(output_dir, deb_name)
+        if os.path.isdir(target_dir):
+            # Ask for confirmation to overwrite existing folder
+            if not messagebox.askyesno(
+                    "Overwrite Directory",
+                    f"The directory '{target_dir}' already exists.\nDelete its contents and unpack again?"
+            ):
+                self.log(f"Unpack canceled: directory '{target_dir}' already exists.")
+                return
+            # Remove the existing directory
+            try:
+                shutil.rmtree(target_dir)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to remove existing directory:\n{e}")
+                self.log(f"Error: could not remove directory '{target_dir}': {e}")
+                return
+        os.makedirs(target_dir, exist_ok=True)
 
-    def browse_output(self):
-        """浏览选择输出deb文件路径"""
-        filename = filedialog.asksaveasfilename(
-            title="保存DEB文件",
-            filetypes=[("DEB文件", "*.deb")],
-            defaultextension=".deb"
+        # Run dpkg-deb commands to unpack
+        self.log(f"Unpacking '{os.path.basename(deb_path)}' to folder: {target_dir}")
+        try:
+            # Extract file system content
+            result1 = subprocess.run(["dpkg-deb", "-x", deb_path, target_dir],
+                                     capture_output=True, text=True)
+            # Extract control files into DEBIAN/
+            os.makedirs(os.path.join(target_dir, "DEBIAN"), exist_ok=True)
+            result2 = subprocess.run(["dpkg-deb", "-e", deb_path, os.path.join(target_dir, "DEBIAN")],
+                                     capture_output=True, text=True)
+        except FileNotFoundError:
+            messagebox.showerror("dpkg-deb not found",
+                                 "The 'dpkg-deb' tool is not installed or not in PATH.\nPlease install dpkg (Debian package tools) to use this feature.")
+            self.log("Error: dpkg-deb tool not found. Install 'dpkg' package (e.g. via Homebrew) to enable unpacking.")
+            return
+
+        # Check for errors in extraction
+        if result1.returncode != 0 or result2.returncode != 0:
+            self.log(f"Error: Failed to unpack '{os.path.basename(deb_path)}'")
+            if result1.stdout: self.log(result1.stdout.strip())
+            if result1.stderr: self.log(result1.stderr.strip())
+            if result2.stdout: self.log(result2.stdout.strip())
+            if result2.stderr: self.log(result2.stderr.strip())
+            messagebox.showerror("Unpack Failed",
+                                 f"Could not unpack '{os.path.basename(deb_path)}'. Please see log for details.")
+            return
+
+        # Log any output or warnings from dpkg-deb
+        if result1.stdout: self.log(result1.stdout.strip())
+        if result1.stderr: self.log(result1.stderr.strip())
+        if result2.stdout: self.log(result2.stdout.strip())
+        if result2.stderr: self.log(result2.stderr.strip())
+        self.log(f"Successfully unpacked to: {target_dir}")
+        messagebox.showinfo("Unpack Complete",
+                            f"Successfully unpacked '{os.path.basename(deb_path)}' to:\n{target_dir}")
+
+    def repack_folder(self):
+        """Handle the Repack button action: select a folder and repack it into a .deb."""
+        folder_path = filedialog.askdirectory(title="Select folder to repack (must contain DEBIAN/control)")
+        if not folder_path:
+            return  # canceled
+        control_path = os.path.join(folder_path, "DEBIAN", "control")
+        if not os.path.isfile(control_path):
+            messagebox.showerror("Invalid Folder",
+                                 "The selected folder is not a valid package directory (missing DEBIAN/control).")
+            self.log(f"Repack canceled: '{folder_path}' has no DEBIAN/control file.")
+            return
+
+        # Ask user for output .deb file path
+        default_name = os.path.basename(folder_path.rstrip("/")) or "package"
+        if not default_name.lower().endswith(".deb"):
+            default_name += ".deb"
+        out_path = filedialog.asksaveasfilename(
+            title="Save repacked .deb as",
+            defaultextension=".deb",
+            initialfile=default_name,
+            filetypes=[("Debian Package", "*.deb"), ("All Files", "*.*")]
         )
-        if filename:
-            self.output_path.set(filename)
-
-    def extract_deb(self):
-        """解包deb文件"""
-        deb_file = self.deb_path.get()
-        extract_dir = self.extract_path.get()
-
-        if not deb_file:
-            messagebox.showerror("错误", "请选择DEB文件")
-            return
-
-        if not extract_dir:
-            messagebox.showerror("错误", "请选择解包路径")
-            return
-
-        # 确保解包目录存在
-        os.makedirs(extract_dir, exist_ok=True)
-
-        self.log(f"正在解包 {deb_file} 到 {extract_dir}...")
-
-        try:
-            # 尝试使用dpkg-deb解包
-            result = subprocess.run(
-                ["dpkg-deb", "-R", deb_file, extract_dir],
-                capture_output=True,
-                text=True
-            )
-
-            if result.returncode != 0:
-                self.log("dpkg-deb解包失败，尝试替代方法...")
-
-                # 创建临时目录
-                temp_dir = tempfile.mkdtemp()
-                try:
-                    # 使用ar提取文件
-                    subprocess.run(["ar", "x", deb_file], cwd=temp_dir, check=True)
-
-                    # 检查提取的文件
-                    data_tar = None
-                    control_tar = None
-                    for file in os.listdir(temp_dir):
-                        if file.startswith("data.tar"):
-                            data_tar = os.path.join(temp_dir, file)
-                        elif file.startswith("control.tar"):
-                            control_tar = os.path.join(temp_dir, file)
-
-                    if data_tar and control_tar:
-                        # 提取data.tar.*
-                        subprocess.run(["tar", "-xf", data_tar, "-C", extract_dir], check=True)
-
-                        # 创建DEBIAN目录
-                        debian_dir = os.path.join(extract_dir, "DEBIAN")
-                        os.makedirs(debian_dir, exist_ok=True)
-
-                        # 提取control.tar.*到临时目录
-                        control_extract = os.path.join(temp_dir, "control")
-                        os.makedirs(control_extract, exist_ok=True)
-                        subprocess.run(["tar", "-xf", control_tar, "-C", control_extract], check=True)
-
-                        # 移动控制文件到DEBIAN目录
-                        for item in os.listdir(control_extract):
-                            src = os.path.join(control_extract, item)
-                            dst = os.path.join(debian_dir, item)
-                            shutil.copy2(src, dst)
-                    else:
-                        raise Exception("未找到data.tar和control.tar文件")
-
-                    self.log("替代方法解包成功!")
-                except Exception as e:
-                    self.log(f"替代解包方法失败: {str(e)}")
-                    messagebox.showerror("错误", f"无法解包DEB文件: {str(e)}")
-                    return
-                finally:
-                    # 清理临时目录
-                    shutil.rmtree(temp_dir)
-            else:
-                self.log("dpkg-deb解包成功!")
-
-            # 设置文件权限
-            self.fix_permissions(extract_dir)
-
-            self.log(f"成功解包DEB文件到: {extract_dir}")
-            messagebox.showinfo("成功", "DEB文件解包成功!")
-
-        except Exception as e:
-            self.log(f"解包时出错: {str(e)}")
-            messagebox.showerror("错误", f"解包失败: {str(e)}")
-
-    def fix_permissions(self, directory):
-        """修复提取文件的权限"""
-        # 确保DEBIAN/control有正确权限
-        control_file = os.path.join(directory, "DEBIAN", "control")
-        if os.path.exists(control_file):
-            os.chmod(control_file, 0o644)  # rw-r--r--
-
-        # 确保所有可执行文件权限正确
-        for root, dirs, files in os.walk(directory):
-            # 设置目录权限
-            for d in dirs:
-                path = os.path.join(root, d)
-                os.chmod(path, 0o755)  # rwxr-xr-x
-
-            # 对可能的可执行文件设置权限
-            for f in files:
-                path = os.path.join(root, f)
-                # 检查是否在bin目录下或以.sh结尾
-                if "bin" in root or f.endswith(".sh") or not os.path.splitext(f)[1]:
-                    os.chmod(path, 0o755)  # rwxr-xr-x
-                else:
-                    os.chmod(path, 0o644)  # rw-r--r--
-
-    def repack_deb(self):
-        """重新打包为deb文件"""
-        extract_dir = self.extract_path.get()
-        output_file = self.output_path.get()
-
-        if not extract_dir:
-            messagebox.showerror("错误", "请指定要打包的目录")
-            return
-
-        if not output_file:
-            messagebox.showerror("错误", "请指定输出DEB文件路径")
-            return
-
-        if not os.path.exists(extract_dir):
-            messagebox.showerror("错误", f"目录不存在: {extract_dir}")
-            return
-
-        # 确保DEBIAN目录存在
-        debian_dir = os.path.join(extract_dir, "DEBIAN")
-        if not os.path.exists(debian_dir):
-            messagebox.showerror("错误", f"找不到DEBIAN目录: {debian_dir}")
-            return
-
-        # 确保control文件存在
-        control_file = os.path.join(debian_dir, "control")
-        if not os.path.exists(control_file):
-            messagebox.showerror("错误", f"找不到control文件: {control_file}")
-            return
-
-        self.log(f"正在打包 {extract_dir} 到 {output_file}...")
-
-        try:
-            # 修复文件权限
-            self.fix_permissions(extract_dir)
-
-            # 使用dpkg-deb打包
-            result = subprocess.run(
-                ["dpkg-deb", "-b", extract_dir, output_file],
-                capture_output=True,
-                text=True
-            )
-
-            if result.returncode != 0:
-                self.log(f"打包错误: {result.stderr}")
-                messagebox.showerror("错误", f"打包失败: {result.stderr}")
+        if not out_path:
+            return  # canceled
+        if os.path.exists(out_path):
+            # Confirm overwrite of existing file
+            if not messagebox.askyesno("Overwrite File", f"The file '{out_path}' already exists. Overwrite it?"):
+                self.log(f"Repack canceled: file '{out_path}' already exists.")
                 return
 
-            self.log(f"成功打包DEB文件: {output_file}")
-            messagebox.showinfo("成功", "DEB文件打包成功!")
-
+        # Read control file content
+        try:
+            with open(control_path, "r") as cf:
+                control_content = cf.read()
         except Exception as e:
-            self.log(f"打包时出错: {str(e)}")
-            messagebox.showerror("错误", f"打包失败: {str(e)}")
+            messagebox.showerror("Error", f"Could not read control file:\n{e}")
+            self.log(f"Error: unable to read '{control_path}': {e}")
+            return
+
+        # Popup window to review/edit control file
+        edit_win = tk.Toplevel(self.root)
+        edit_win.title("Edit control file before repacking")
+        edit_win.geometry("500x400")
+        tk.Label(edit_win, text="Review or edit DEBIAN/control metadata:").pack(anchor="w", padx=5, pady=2)
+        text_area = tk.Text(edit_win)
+        text_area.pack(fill=tk.BOTH, expand=True, padx=5, pady=2)
+        text_area.insert("1.0", control_content)
+        # Scrollbar for the text area
+        scroll = tk.Scrollbar(edit_win, command=text_area.yview)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        text_area.configure(yscrollcommand=scroll.set)
+
+        # Frame for buttons in the popup
+        btn_frame = tk.Frame(edit_win)
+        btn_frame.pack(pady=5)
+
+        def do_repack():
+            # Save edited control content back to file
+            new_content = text_area.get("1.0", "end-1c")
+            try:
+                with open(control_path, "w") as cf:
+                    cf.write(new_content)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to write control file:\n{e}")
+                self.log(f"Error: could not write to '{control_path}': {e}")
+                return  # do not destroy window, allow retry
+            edit_win.destroy()
+            # Run dpkg-deb to build the package
+            self.log(f"Repacking folder '{folder_path}' into '{os.path.basename(out_path)}'...")
+            try:
+                build_cmd = ["dpkg-deb", "-Zgzip", "-z9", "-b", folder_path, out_path]
+                result = subprocess.run(build_cmd, capture_output=True, text=True)
+            except FileNotFoundError:
+                messagebox.showerror("dpkg-deb not found",
+                                     "The 'dpkg-deb' tool is not installed or not in PATH.\nPlease install it to create .deb packages.")
+                self.log("Error: dpkg-deb tool not found. Cannot repack folder.")
+                return
+
+            if result.returncode != 0:
+                self.log(f"Error: Failed to create package '{os.path.basename(out_path)}'")
+                if result.stdout: self.log(result.stdout.strip())
+                if result.stderr: self.log(result.stderr.strip())
+                messagebox.showerror("Repack Failed", "Package creation failed. See log for details.")
+            else:
+                # Log any output or warnings
+                if result.stdout: self.log(result.stdout.strip())
+                if result.stderr: self.log(result.stderr.strip())
+                self.log(f"Successfully created package: {out_path}")
+                messagebox.showinfo("Repack Complete", f"Successfully created .deb package:\n{out_path}")
+
+        def cancel_repack():
+            self.log("Repack canceled by user.")
+            edit_win.destroy()
+
+        tk.Button(btn_frame, text="Cancel", command=cancel_repack).pack(side=tk.RIGHT, padx=5)
+        tk.Button(btn_frame, text="Save & Repack", command=do_repack).pack(side=tk.RIGHT, padx=5)
+
+        # Make the popup modal
+        edit_win.transient(self.root)
+        edit_win.grab_set()
+        self.root.wait_window(edit_win)
 
 
-def check_dependencies():
-    """检查必要的依赖是否已安装"""
-    missing = []
-
-    # 检查dpkg-deb
-    try:
-        subprocess.run(["dpkg-deb", "--version"],
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-    except:
-        missing.append("dpkg-deb")
-
-    # 检查ar
-    try:
-        subprocess.run(["ar", "--version"],
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-    except:
-        missing.append("ar")
-
-    # 检查tar
-    try:
-        subprocess.run(["tar", "--version"],
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-    except:
-        missing.append("tar")
-
-    return missing
-
-
-def main():
-    # 检查依赖
-    missing = check_dependencies()
-    if missing:
-        print(f"缺少必要的依赖: {', '.join(missing)}")
-        print("请安装缺少的依赖后再运行此程序")
-
-        if "dpkg-deb" in missing:
-            if sys.platform == "darwin":  # macOS
-                print("在macOS上安装dpkg: brew install dpkg")
-            elif sys.platform.startswith("linux"):
-                print("在Linux上安装dpkg: sudo apt-get install dpkg")
-
-        if "ar" in missing or "tar" in missing:
-            if sys.platform == "darwin":  # macOS
-                print("在macOS上安装binutils: brew install binutils")
-            elif sys.platform.startswith("linux"):
-                print("在Linux上安装binutils: sudo apt-get install binutils")
-
-        sys.exit(1)
-
-    # 创建GUI
-    root = tk.Tk()
-    app = SimpleTweakEditor(root)
-    root.mainloop()
-
-
+# Initialize and start the Tkinter event loop
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    app = DebPackageGUI(root)
+    root.mainloop()
