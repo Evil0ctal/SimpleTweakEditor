@@ -1,22 +1,270 @@
+import locale
 import os
-import sys
+import platform
 import shutil
 import subprocess
-import platform
+import sys
 import threading
-import time
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QEvent
-from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QAction, QTextCursor, QColor, QPalette
+from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QAction, QTextCursor, QColor, QPalette, QActionGroup
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QTextEdit, QLineEdit, QGroupBox, QFileDialog, QMessageBox,
-    QSplitter, QStatusBar, QDialog,
+    QSplitter, QStatusBar, QDialog, QMenu, QComboBox,
     QDialogButtonBox, QPlainTextEdit
 )
 
 # 定义自定义事件类型的基础ID
 _CUSTOM_EVENT_TYPE = QEvent.Type(QEvent.Type.User.value + 1)
+
+
+# 语言翻译字典
+class Translations:
+    """多语言支持类"""
+    EN = {
+        # 通用
+        "app_title": "iOS .deb Tweak Editor",
+        "ready": "Ready",
+        "file": "File",
+        "settings": "Settings",
+        "help": "Help",
+        "about": "About",
+        "exit": "Exit",
+        "cancel": "Cancel",
+        "ok": "OK",
+        "yes": "Yes",
+        "no": "No",
+        "success": "Success",
+        "error": "Error",
+        "warning": "Warning",
+        "info": "Information",
+
+        # 菜单和按钮
+        "unpack_deb": "Unpack .deb File",
+        "repack_folder": "Repack Folder",
+        "debug_mode": "Debug Mode",
+        "language": "Language",
+        "clear_log": "Clear Log",
+        "execute": "Execute",
+        "save": "Save",
+
+        # 界面标签
+        "tip_drag_drop": "Tip: Drop a .deb file to unpack, or a folder to repack.",
+        "drop_zone": "Drop .deb files or folders with DEBIAN directory here",
+        "operation_log": "Operation Log",
+        "command_line": "Command Line",
+
+        # 对话框和消息
+        "unpack_confirm": "Unpack File",
+        "unpack_question": "Do you want to unpack this file: {0}?",
+        "unpack_options": "Select unpack options:",
+        "auto_unpack": "Auto Unpack",
+        "manual_select_dir": "Select Directory Manually",
+        "select_unpack_output": "Select Unpack Output Directory",
+        "overwrite_dir": "Overwrite Directory",
+        "overwrite_question": "Directory '{0}' already exists.\nDelete its contents and unpack again?",
+        "unpacking": "Unpacking '{0}'...",
+        "unpacking_file": "Unpacking file...",
+        "unpack_complete": "Unpack Complete",
+        "unpack_success": "Successfully unpacked to:\n{0}\n\nDo you want to open the unpacked folder?",
+        "unpack_failed": "Unpack failed. Details:\n{0}",
+        "unpack_error": "Error: Unpack failed",
+        "unpack_exception": "Exception during unpacking: {0}",
+
+        "repack_confirm": "Repack Confirmation",
+        "repack_question": "Do you want to package this folder as .deb?\n{0}",
+        "repack_invalid_folder": "Invalid folder",
+        "repack_missing_debian": "The selected folder is not a valid package directory (missing DEBIAN/control).",
+        "save_repacked_deb": "Save Repacked .deb As",
+        "setting_debian_permissions": "Setting permissions for DEBIAN directory files...",
+        "set_permission": "Set {0} permission for {1}",
+        "permission_error": "Error setting file permissions: {0}",
+        "permission_warning": "Permission Warning",
+        "permission_warning_msg": "Error setting some file permissions, this may affect the packaging result.",
+        "packing": "Packing '{0}'...",
+        "packing_file": "Packing file...",
+        "pack_complete": "Packaging Complete",
+        "pack_success": "Successfully created .deb package:\n{0}\n\nDo you want to open the folder containing this file?",
+        "pack_failed": "Packaging failed. Details:\n{0}",
+        "pack_error": "Error: Packaging failed",
+        "pack_exception": "Exception during packaging: {0}",
+
+        # Control编辑器
+        "edit_control": "Edit Control File",
+        "check_control": "Check Control File Format",
+        "control_check_label": "Check or edit DEBIAN/control metadata:",
+        "control_tip": "Tip: Ensure all fields are in the correct format, with each field ending with a newline. Packages must include at least Package, Version, Architecture, and Description fields.",
+        "control_format_error": "Control File Format Error",
+        "missing_required_fields": "Missing required fields: {0}\n\nA valid control file must include at least these fields:\nPackage: package name\nVersion: version number\nArchitecture: architecture (e.g., iphoneos-arm64)\nDescription: package description",
+        "field_format_error": "Field format error: '{0}'\n\nFields should be in 'Field: Value' format, or continuation lines for multi-line fields (starting with a space).",
+        "control_valid": "Control File Format Valid",
+        "control_valid_msg": "Control file format validation passed!",
+
+        # 错误和警告
+        "operation_in_progress": "An operation is already in progress, please try again later.",
+        "cannot_read_control": "Cannot read control file: {0}",
+        "cannot_write_control": "Cannot write control file: {0}",
+        "unsupported_file": "Unsupported file type: {0}",
+        "unsupported_file_msg": "Please drop a .deb file or a folder containing a DEBIAN directory",
+        "invalid_dropfolder": "The dropped folder is not a valid deb package structure (missing DEBIAN directory): {0}",
+        "cmd_exec_error": "Error executing command: {0}",
+        "cmd_return_error": "Command returned error code: {0}",
+        "cmd_complete": "Command execution complete",
+        "cannot_open_folder": "Cannot open folder: {0}",
+        "dpkg_not_found": "'dpkg-deb' tool not installed or not in PATH.\nPlease install dpkg to use this feature.",
+        "debug_enabled": "Debug mode enabled",
+        "debug_disabled": "Debug mode disabled",
+
+        # 欢迎消息
+        "welcome": "Welcome to iOS .deb Tweak Editor! Program is ready.",
+        "intro_title": "=== Software Introduction ===",
+        "intro_text": "This is a tool for unpacking and repacking iOS .deb files, particularly useful for iOS jailbreak tweak developers and modifiers.",
+        "features_title": "=== Main Features ===",
+        "feature_1": "1. Unpack .deb files: Extract .deb files into folders for easy viewing and modification",
+        "feature_2": "2. Repack folders: Repackage modified folders back into .deb files",
+        "feature_3": "3. Support for drag and drop: Simply drag and drop .deb files into the window to start unpacking",
+        "feature_4": "4. Command line support: Execute custom commands",
+        "usage_title": "=== Usage Instructions ===",
+        "usage_unpack_title": "Unpack .deb files:",
+        "usage_unpack_1": "- Method 1: Click the \"Unpack .deb File\" button, select file and output directory",
+        "usage_unpack_2": "- Method 2: Drag and drop .deb files directly into the application window",
+        "usage_repack_title": "Repack folders:",
+        "usage_repack_1": "- Method 1: Click the \"Repack Folder\" button, select a folder containing the DEBIAN directory",
+        "usage_repack_2": "- Method 2: Drag and drop a folder containing the DEBIAN directory into the application window",
+        "copyright_title": "=== Copyright Information ===",
+        "copyright_text": "© 2025 Evil0ctal",
+        "project_url": "Project URL: https://github.com/Evil0ctal/SimpleTweakEditor",
+        "license": "License: Apache License 2.0",
+        "ready_to_go": "Ready to go! Please begin operations...",
+
+        # 关于对话框
+        "about_title": "iOS .deb Tweak Editor",
+        "about_version": "Version: 1.0.0",
+        "about_description": "A tool for unpacking and repacking iOS .deb files."
+    }
+
+    ZH = {
+        # 通用
+        "app_title": "iOS .deb Tweak编辑器",
+        "ready": "就绪",
+        "file": "文件",
+        "settings": "设置",
+        "help": "帮助",
+        "about": "关于",
+        "exit": "退出",
+        "cancel": "取消",
+        "ok": "确定",
+        "yes": "是",
+        "no": "否",
+        "success": "成功",
+        "error": "错误",
+        "warning": "警告",
+        "info": "信息",
+
+        # 菜单和按钮
+        "unpack_deb": "解包 .deb 文件",
+        "repack_folder": "重新打包文件夹",
+        "debug_mode": "调试模式",
+        "language": "语言",
+        "clear_log": "清除日志",
+        "execute": "执行",
+        "save": "保存",
+
+        # 界面标签
+        "tip_drag_drop": "提示: 将.deb文件拖放到窗口可直接解包，将文件夹拖放可直接打包。",
+        "drop_zone": "将.deb文件或包含DEBIAN目录的文件夹拖放到此处",
+        "operation_log": "操作日志",
+        "command_line": "命令行",
+
+        # 对话框和消息
+        "unpack_confirm": "解包确认",
+        "unpack_question": "是否解包文件: {0}?",
+        "unpack_options": "选择解包选项:",
+        "auto_unpack": "自动解包",
+        "manual_select_dir": "手动选择目录",
+        "select_unpack_output": "选择解包输出目录",
+        "overwrite_dir": "覆盖目录",
+        "overwrite_question": "目录 '{0}' 已存在。\n是否删除其内容并重新解包?",
+        "unpacking": "正在解包 '{0}'...",
+        "unpacking_file": "正在解包文件...",
+        "unpack_complete": "解包完成",
+        "unpack_success": "成功解包到:\n{0}\n\n是否打开解包后的文件夹?",
+        "unpack_failed": "解包失败。详细信息:\n{0}",
+        "unpack_error": "错误: 解包失败",
+        "unpack_exception": "解包过程中出现异常: {0}",
+
+        "repack_confirm": "打包确认",
+        "repack_question": "是否将文件夹打包为.deb?\n{0}",
+        "repack_invalid_folder": "无效文件夹",
+        "repack_missing_debian": "所选文件夹不是有效的软件包目录(缺少DEBIAN/control)。",
+        "save_repacked_deb": "将重新打包的.deb保存为",
+        "setting_debian_permissions": "正在设置DEBIAN目录中的文件权限...",
+        "set_permission": "为{1}设置{0}权限",
+        "permission_error": "设置文件权限时出错: {0}",
+        "permission_warning": "权限警告",
+        "permission_warning_msg": "设置某些文件权限时出错，这可能会影响打包结果。",
+        "packing": "正在将文件夹 '{0}' 打包...",
+        "packing_file": "正在打包文件...",
+        "pack_complete": "打包完成",
+        "pack_success": "成功创建.deb软件包:\n{0}\n\n是否打开包含该文件的文件夹?",
+        "pack_failed": "打包失败。详细信息:\n{0}",
+        "pack_error": "错误: 打包失败",
+        "pack_exception": "打包过程中出现异常: {0}",
+
+        # Control编辑器
+        "edit_control": "编辑Control文件",
+        "check_control": "检查Control文件格式",
+        "control_check_label": "检查或编辑DEBIAN/control元数据:",
+        "control_tip": "提示: 确保所有字段格式正确，每个字段以换行符结束。包必须至少包含Package、Version、Architecture和Description字段。",
+        "control_format_error": "Control文件格式错误",
+        "missing_required_fields": "缺少必填字段: {0}\n\n一个有效的control文件必须至少包含以下字段:\nPackage: 软件包名称\nVersion: 版本号\nArchitecture: 架构（如iphoneos-arm64）\nDescription: 软件包描述",
+        "field_format_error": "字段格式不正确: '{0}'\n\n字段应该采用 'Field: Value' 格式，或者是多行字段的延续行（以空格开头）。",
+        "control_valid": "Control文件格式正确",
+        "control_valid_msg": "Control文件格式验证通过！",
+
+        # 错误和警告
+        "operation_in_progress": "有操作正在进行中，请稍后再试。",
+        "cannot_read_control": "无法读取control文件: {0}",
+        "cannot_write_control": "无法写入control文件: {0}",
+        "unsupported_file": "不支持的文件类型: {0}",
+        "unsupported_file_msg": "请拖放.deb文件或包含DEBIAN目录的文件夹",
+        "invalid_dropfolder": "拖放的文件夹不是有效的deb包结构（缺少DEBIAN目录）: {0}",
+        "cmd_exec_error": "执行命令时出错: {0}",
+        "cmd_return_error": "命令返回错误代码: {0}",
+        "cmd_complete": "命令执行完成",
+        "cannot_open_folder": "无法打开文件夹: {0}",
+        "dpkg_not_found": "未安装'dpkg-deb'工具或其不在PATH中。\n请安装dpkg以使用此功能。",
+        "debug_enabled": "调试模式已开启",
+        "debug_disabled": "调试模式已关闭",
+
+        # 欢迎消息
+        "welcome": "欢迎使用iOS .deb Tweak编辑器! 程序已准备就绪。",
+        "intro_title": "=== 软件简介 ===",
+        "intro_text": "这是一个用于解包和重新打包iOS .deb文件的工具，特别适合iOS越狱插件开发者和修改者。",
+        "features_title": "=== 主要功能 ===",
+        "feature_1": "1. 解包.deb文件：将.deb文件解压缩到文件夹中，方便查看和修改",
+        "feature_2": "2. 重新打包文件夹：将修改后的文件夹重新打包为.deb文件",
+        "feature_3": "3. 支持文件拖放：直接拖放.deb文件到窗口即可开始解包",
+        "feature_4": "4. 支持命令行：可以执行自定义命令",
+        "usage_title": "=== 使用方法 ===",
+        "usage_unpack_title": "解包.deb文件:",
+        "usage_unpack_1": "- 方法1: 点击\"解包.deb文件\"按钮，选择文件和输出目录",
+        "usage_unpack_2": "- 方法2: 直接将.deb文件拖放到应用窗口中",
+        "usage_repack_title": "重新打包文件夹:",
+        "usage_repack_1": "- 方法1: 点击\"重新打包文件夹\"按钮，选择含有DEBIAN目录的文件夹",
+        "usage_repack_2": "- 方法2: 直接将含有DEBIAN目录的文件夹拖放到应用窗口中",
+        "copyright_title": "=== 版权信息 ===",
+        "copyright_text": "© 2025 Evil0ctal",
+        "project_url": "项目地址: https://github.com/Evil0ctal/SimpleTweakEditor",
+        "license": "许可证: Apache License 2.0",
+        "ready_to_go": "准备就绪！请开始操作...",
+
+        # 关于对话框
+        "about_title": "iOS .deb Tweak编辑器",
+        "about_version": "版本: 1.0.0",
+        "about_description": "一个用于解包和重新打包iOS .deb文件的工具。"
+    }
 
 
 class _LogEvent(QEvent):
@@ -57,16 +305,74 @@ class _ThreadExceptionEvent(QEvent):
         self.operation_type = operation_type
 
 
+class LanguageManager:
+    """语言管理器，管理多语言支持"""
+
+    def __init__(self):
+        # 支持的语言
+        self.supported_languages = ["en", "zh"]
+        # 默认使用系统语言，如果不支持则默认英文
+        self.current_language = self.detect_system_language()
+
+    def detect_system_language(self):
+        """检测系统语言并返回支持的语言代码"""
+        # 获取系统语言
+        system_locale = locale.getdefaultlocale()[0]
+        if system_locale:
+            # 从语言代码中提取两个字母的语言代码
+            system_lang = system_locale.split('_')[0].lower()
+            if system_lang in self.supported_languages:
+                return system_lang
+        # 默认返回英文
+        return "en"
+
+    def set_language(self, lang_code):
+        """设置当前语言"""
+        if lang_code in self.supported_languages:
+            self.current_language = lang_code
+            return True
+        return False
+
+    def get_text(self, key):
+        """获取当前语言的文本"""
+        if self.current_language == "zh":
+            # 中文
+            if key in Translations.ZH:
+                return Translations.ZH[key]
+        # 默认英文
+        if key in Translations.EN:
+            return Translations.EN[key]
+        # 如果翻译缺失，返回键名
+        return key
+
+    def format_text(self, key, *args):
+        """使用参数格式化文本"""
+        text = self.get_text(key)
+        if args:
+            try:
+                return text.format(*args)
+            except Exception:
+                return text
+        return text
+
+
 class CommandThread(QThread):
     """
     执行命令的后台线程
     """
     output_received = pyqtSignal(str, str)  # 信号: (文本, 标签)
     command_finished = pyqtSignal(int)  # 信号: 返回码
+    error_message = pyqtSignal(str)  # 信号: 错误消息
 
-    def __init__(self, command):
+    def __init__(self, command, lang_mgr=None):
         super().__init__()
         self.command = command
+        self.lang_mgr = lang_mgr
+
+    def get_error_text(self, error):
+        if self.lang_mgr:
+            return self.lang_mgr.format_text("cmd_exec_error", error)
+        return f"执行命令时出错: {error}"
 
     def run(self):
         try:
@@ -90,7 +396,8 @@ class CommandThread(QThread):
             return_code = process.wait()
             self.command_finished.emit(return_code)
         except Exception as e:
-            self.output_received.emit(f"执行命令时出错: {e}", "error")
+            error_msg = self.get_error_text(e)
+            self.output_received.emit(error_msg, "error")
             self.command_finished.emit(1)
 
 
@@ -103,17 +410,19 @@ class ControlEditorDialog(QDialog):
         super().__init__(parent)
         self.control_path = control_path
         self.control_content = control_content
+        # 获取父窗口的语言管理器
+        self.lang_mgr = parent.lang_mgr if parent else LanguageManager()
         self.setupUI()
 
     def setupUI(self):
-        self.setWindowTitle("编辑Control文件")
+        self.setWindowTitle(self.lang_mgr.get_text("edit_control"))
         self.setMinimumSize(600, 500)
         self.setModal(True)
 
         layout = QVBoxLayout(self)
 
         # 提示标签
-        info_label = QLabel("检查或编辑DEBIAN/control元数据:")
+        info_label = QLabel(self.lang_mgr.get_text("control_check_label"))
         layout.addWidget(info_label)
 
         # 文本编辑器
@@ -123,13 +432,12 @@ class ControlEditorDialog(QDialog):
         layout.addWidget(self.editor)
 
         # 底部提示标签
-        tip_label = QLabel(
-            "提示: 确保所有字段格式正确，每个字段以换行符结束。包必须至少包含Package、Version、Architecture和Description字段。")
+        tip_label = QLabel(self.lang_mgr.get_text("control_tip"))
         tip_label.setStyleSheet("color: gray;")
         layout.addWidget(tip_label)
 
         # 检查按钮
-        validate_btn = QPushButton("检查Control文件格式")
+        validate_btn = QPushButton(self.lang_mgr.get_text("check_control"))
         validate_btn.clicked.connect(self.validate_control)
         layout.addWidget(validate_btn)
 
@@ -155,13 +463,8 @@ class ControlEditorDialog(QDialog):
         if missing_fields:
             QMessageBox.warning(
                 self,
-                "Control文件格式错误",
-                f"缺少必填字段: {', '.join(missing_fields)}\n\n"
-                f"一个有效的control文件必须至少包含以下字段:\n"
-                f"Package: 软件包名称\n"
-                f"Version: 版本号\n"
-                f"Architecture: 架构（如iphoneos-arm64）\n"
-                f"Description: 软件包描述"
+                self.lang_mgr.get_text("control_format_error"),
+                self.lang_mgr.format_text("missing_required_fields", ', '.join(missing_fields))
             )
             return False
 
@@ -170,16 +473,15 @@ class ControlEditorDialog(QDialog):
             if line and not line.startswith(" ") and ":" not in line:
                 QMessageBox.warning(
                     self,
-                    "Control文件格式错误",
-                    f"字段格式不正确: '{line}'\n\n"
-                    f"字段应该采用 'Field: Value' 格式，或者是多行字段的延续行（以空格开头）。"
+                    self.lang_mgr.get_text("control_format_error"),
+                    self.lang_mgr.format_text("field_format_error", line)
                 )
                 return False
 
         QMessageBox.information(
             self,
-            "Control文件格式正确",
-            "Control文件格式验证通过！"
+            self.lang_mgr.get_text("control_valid"),
+            self.lang_mgr.get_text("control_valid_msg")
         )
         return True
 
@@ -194,7 +496,12 @@ class ControlEditorDialog(QDialog):
 class DebPackageGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("iOS .deb Tweak编辑器")
+
+        # 初始化语言管理器
+        self.lang_mgr = LanguageManager()
+
+        # 设置窗口标题和大小
+        self.setWindowTitle(self.lang_mgr.get_text("app_title"))
         self.resize(800, 600)
         self.setMinimumSize(600, 500)
         self.setAcceptDrops(True)
@@ -234,8 +541,90 @@ class DebPackageGUI(QMainWindow):
     def toggle_debug_mode(self):
         """切换调试模式"""
         self.debug_mode = not self.debug_mode
-        self.debug_print(f"调试模式已{'开启' if self.debug_mode else '关闭'}")
-        self.log(f"调试模式已{'开启' if self.debug_mode else '关闭'}", "info")
+        debug_status = self.lang_mgr.get_text("debug_enabled" if self.debug_mode else "debug_disabled")
+        self.debug_print(debug_status)
+        self.log(debug_status, "info")
+
+    def switch_language(self, lang_code):
+        """切换界面语言"""
+        if self.lang_mgr.set_language(lang_code):
+            self.debug_print(f"Language switched to {lang_code}")
+
+            # 更新窗口标题
+            self.setWindowTitle(self.lang_mgr.get_text("app_title"))
+
+            # 重建菜单
+            self.menuBar().clear()
+            self.createMenus()
+
+            # 更新界面上的文本
+            self.updateUITexts()
+
+            # 更新状态栏
+            self.status_bar.showMessage(self.lang_mgr.get_text("ready"))
+
+            # 记录到日志
+            self.log(f"Language switched to: {lang_code}", "info")
+
+    def updateUITexts(self):
+        """更新界面上的所有文本"""
+        # 更新提示信息
+        for widget in self.findChildren(QLabel):
+            if widget.property("infoLabel") == True:
+                widget.setText(self.lang_mgr.get_text("tip_drag_drop"))
+
+        # 更新按钮文本
+        self.unpack_btn.setText(self.lang_mgr.get_text("unpack_deb"))
+        self.repack_btn.setText(self.lang_mgr.get_text("repack_folder"))
+
+        # 拖放区域
+        self.drop_label.setText(self.lang_mgr.get_text("drop_zone"))
+
+        # 日志区域
+        for group_box in self.findChildren(QGroupBox):
+            if "log" in group_box.title().lower():
+                group_box.setTitle(self.lang_mgr.get_text("operation_log"))
+            elif "command" in group_box.title().lower():
+                group_box.setTitle(self.lang_mgr.get_text("command_line"))
+            elif "drop" in group_box.title().lower():
+                group_box.setTitle(self.lang_mgr.get_text("drop_zone"))
+
+        # 清除日志按钮
+        for button in self.findChildren(QPushButton):
+            if "clear" in button.text().lower():
+                button.setText(self.lang_mgr.get_text("clear_log"))
+            elif "execute" in button.text().lower():
+                button.setText(self.lang_mgr.get_text("execute"))
+
+    def load_command_preset(self, index):
+        """加载预设命令"""
+        if index > 0:  # 第一项是标题，忽略
+            preset = self.cmd_presets.currentText()
+            self.cmd_entry.setText(preset)
+            self.cmd_presets.setCurrentIndex(0)  # 重置到默认选项
+
+    def browse_path_for_command(self):
+        """浏览文件端口并将路径添加到命令行"""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "选择文件",
+            self.app_dir
+        )
+
+        if path:
+            # 将路径添加到当前命令
+            current_cmd = self.cmd_entry.text()
+            if current_cmd and not current_cmd.endswith(" "):
+                current_cmd += " "
+
+            # 委托给Qt添加必要的转义
+            self.cmd_entry.setText(current_cmd + f"\"{path}\"")
+            self.cmd_entry.setFocus()
+
+    def handle_command_history(self, command):
+        """处理命令历史记录 - 可以在未来扩展"""
+        # TODO: 实现命令历史记录功能
+        pass
 
     def start_operation(self):
         """标记操作开始"""
@@ -267,7 +656,7 @@ class DebPackageGUI(QMainWindow):
         main_layout.setSpacing(10)
 
         # 顶部信息区域
-        info_label = QLabel("提示: 将.deb文件拖放到窗口可直接解包，将文件夹拖放可直接打包。")
+        info_label = QLabel(self.lang_mgr.get_text("tip_drag_drop"))
         info_label.setProperty("infoLabel", True)  # 使用属性选择器
         main_layout.addWidget(info_label)
 
@@ -275,13 +664,13 @@ class DebPackageGUI(QMainWindow):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(10)
 
-        self.unpack_btn = QPushButton("解包 .deb 文件")
+        self.unpack_btn = QPushButton(self.lang_mgr.get_text("unpack_deb"))
         self.unpack_btn.clicked.connect(self.unpack_deb)
         self.unpack_btn.setIcon(QIcon.fromTheme("package"))
         self.unpack_btn.setMinimumWidth(150)
         button_layout.addWidget(self.unpack_btn)
 
-        self.repack_btn = QPushButton("重新打包文件夹")
+        self.repack_btn = QPushButton(self.lang_mgr.get_text("repack_folder"))
         self.repack_btn.clicked.connect(self.repack_folder)
         self.repack_btn.setIcon(QIcon.fromTheme("package"))
         self.repack_btn.setMinimumWidth(150)
@@ -291,10 +680,10 @@ class DebPackageGUI(QMainWindow):
         main_layout.addLayout(button_layout)
 
         # 拖放区域
-        drop_group = QGroupBox("拖放区域")
+        drop_group = QGroupBox(self.lang_mgr.get_text("drop_zone"))
         drop_layout = QVBoxLayout(drop_group)
 
-        self.drop_label = QLabel("将.deb文件或包含DEBIAN目录的文件夹拖放到此处")
+        self.drop_label = QLabel(self.lang_mgr.get_text("drop_zone"))
         self.drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.drop_label.setProperty("dropZone", True)  # 使用属性选择器而不是直接设置样式
         self.drop_label.setMinimumHeight(100)
@@ -309,13 +698,13 @@ class DebPackageGUI(QMainWindow):
         splitter = QSplitter(Qt.Orientation.Vertical)
 
         # 日志区域
-        log_group = QGroupBox("操作日志")
+        log_group = QGroupBox(self.lang_mgr.get_text("operation_log"))
         log_layout = QVBoxLayout(log_group)
 
         log_toolbar = QHBoxLayout()
         log_toolbar.addStretch()
 
-        clear_log_btn = QPushButton("清除日志")
+        clear_log_btn = QPushButton(self.lang_mgr.get_text("clear_log"))
         clear_log_btn.clicked.connect(self.clear_log)
         log_toolbar.addWidget(clear_log_btn)
 
@@ -328,17 +717,53 @@ class DebPackageGUI(QMainWindow):
 
         splitter.addWidget(log_group)
 
-        # 命令行区域
-        cmd_group = QGroupBox("命令行")
-        cmd_layout = QHBoxLayout(cmd_group)
+        # 命令行区域 - 增强功能
+        cmd_group = QGroupBox(self.lang_mgr.get_text("command_line"))
+        cmd_layout = QVBoxLayout(cmd_group)
+
+        # 命令工具栏
+        cmd_toolbar = QHBoxLayout()
+
+        # 快捷命令下拉菜单
+        self.cmd_presets = QComboBox()
+        self.cmd_presets.setEditable(False)
+        self.cmd_presets.addItem("--- 快捷命令 ---")
+        self.cmd_presets.addItem("dpkg -l")  # 列出所有已安装包
+        self.cmd_presets.addItem("find . -name '*.deb'")  # 查找.deb文件
+        self.cmd_presets.addItem("dpkg-deb --info file.deb")  # 查看.deb包信息
+        self.cmd_presets.addItem("ls -la DEBIAN/")  # 列出DEBIAN目录
+        self.cmd_presets.addItem("chmod 755 DEBIAN/postinst")  # 设置脚本权限
+        self.cmd_presets.currentIndexChanged.connect(self.load_command_preset)
+        cmd_toolbar.addWidget(self.cmd_presets)
+
+        # 清除命令输入框按钮
+        clear_cmd_btn = QPushButton("X")
+        clear_cmd_btn.setMaximumWidth(30)
+        clear_cmd_btn.clicked.connect(lambda: self.cmd_entry.clear())
+        cmd_toolbar.addWidget(clear_cmd_btn)
+
+        # 实用工具按钮
+        file_browser_btn = QPushButton("...")  # 文件浏览器
+        file_browser_btn.setMaximumWidth(30)
+        file_browser_btn.setToolTip("选择文件路径")
+        file_browser_btn.clicked.connect(self.browse_path_for_command)
+        cmd_toolbar.addWidget(file_browser_btn)
+
+        cmd_layout.addLayout(cmd_toolbar)
+
+        # 命令行输入框
+        cmd_input_layout = QHBoxLayout()
 
         self.cmd_entry = QLineEdit()
+        self.cmd_entry.setPlaceholderText("输入命令或从上方选择快捷命令...")
         self.cmd_entry.returnPressed.connect(self.execute_command)
-        cmd_layout.addWidget(self.cmd_entry)
+        cmd_input_layout.addWidget(self.cmd_entry)
 
-        cmd_btn = QPushButton("执行")
+        cmd_btn = QPushButton(self.lang_mgr.get_text("execute"))
         cmd_btn.clicked.connect(self.execute_command)
-        cmd_layout.addWidget(cmd_btn)
+        cmd_input_layout.addWidget(cmd_btn)
+
+        cmd_layout.addLayout(cmd_input_layout)
 
         splitter.addWidget(cmd_group)
 
@@ -350,7 +775,7 @@ class DebPackageGUI(QMainWindow):
         # 状态栏
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("就绪")
+        self.status_bar.showMessage(self.lang_mgr.get_text("ready"))
 
     def createMenus(self):
         """创建菜单栏"""
@@ -358,40 +783,64 @@ class DebPackageGUI(QMainWindow):
         menubar = self.menuBar()
 
         # 文件菜单
-        file_menu = menubar.addMenu("文件")
+        file_menu = menubar.addMenu(self.lang_mgr.get_text("file"))
 
         # 解包选项
-        unpack_action = QAction("解包 .deb 文件", self)
+        unpack_action = QAction(self.lang_mgr.get_text("unpack_deb"), self)
         unpack_action.triggered.connect(self.unpack_deb)
         file_menu.addAction(unpack_action)
 
         # 打包选项
-        repack_action = QAction("重新打包文件夹", self)
+        repack_action = QAction(self.lang_mgr.get_text("repack_folder"), self)
         repack_action.triggered.connect(self.repack_folder)
         file_menu.addAction(repack_action)
 
         file_menu.addSeparator()
 
         # 退出选项
-        exit_action = QAction("退出", self)
+        exit_action = QAction(self.lang_mgr.get_text("exit"), self)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
         # 设置菜单
-        settings_menu = menubar.addMenu("设置")
+        settings_menu = menubar.addMenu(self.lang_mgr.get_text("settings"))
 
         # 调试模式切换
-        debug_action = QAction("调试模式", self)
+        debug_action = QAction(self.lang_mgr.get_text("debug_mode"), self)
         debug_action.setCheckable(True)
         debug_action.setChecked(self.debug_mode)
         debug_action.triggered.connect(self.toggle_debug_mode)
         settings_menu.addAction(debug_action)
 
+        # 语言切换子菜单
+        language_menu = QMenu(self.lang_mgr.get_text("language"), self)
+        settings_menu.addMenu(language_menu)
+
+        # 添加支持的语言
+        lang_group = QActionGroup(self)
+        lang_group.setExclusive(True)
+
+        # 英文选项
+        en_action = QAction("English", self)
+        en_action.setCheckable(True)
+        en_action.setChecked(self.lang_mgr.current_language == "en")
+        en_action.triggered.connect(lambda: self.switch_language("en"))
+        lang_group.addAction(en_action)
+        language_menu.addAction(en_action)
+
+        # 中文选项
+        zh_action = QAction("中文", self)
+        zh_action.setCheckable(True)
+        zh_action.setChecked(self.lang_mgr.current_language == "zh")
+        zh_action.triggered.connect(lambda: self.switch_language("zh"))
+        lang_group.addAction(zh_action)
+        language_menu.addAction(zh_action)
+
         # 帮助菜单
-        help_menu = menubar.addMenu("帮助")
+        help_menu = menubar.addMenu(self.lang_mgr.get_text("help"))
 
         # 关于选项
-        about_action = QAction("关于", self)
+        about_action = QAction(self.lang_mgr.get_text("about"), self)
         about_action.triggered.connect(self.show_about_dialog)
         help_menu.addAction(about_action)
 
@@ -478,11 +927,16 @@ class DebPackageGUI(QMainWindow):
             if os.path.isdir(os.path.join(path, "DEBIAN")):
                 self.process_folder(path)
             else:
-                self.log(f"拖放的文件夹不是有效的deb包结构（缺少DEBIAN目录）: {path}", "error")
-                QMessageBox.critical(self, "无效文件夹", "所选文件夹不是有效的deb包结构（缺少DEBIAN目录）")
+                error_msg = self.lang_mgr.format_text("invalid_dropfolder", path)
+                self.log(error_msg, "error")
+                QMessageBox.critical(self,
+                                     self.lang_mgr.get_text("repack_invalid_folder"),
+                                     self.lang_mgr.get_text("repack_missing_debian"))
         else:
-            self.log(f"不支持的文件类型: {path}", "error")
-            QMessageBox.warning(self, "不支持的文件", "请拖放.deb文件或包含DEBIAN目录的文件夹")
+            self.log(self.lang_mgr.format_text("unsupported_file", path), "error")
+            QMessageBox.warning(self,
+                                self.lang_mgr.get_text("unsupported_file"),
+                                self.lang_mgr.get_text("unsupported_file_msg"))
 
     def process_deb_file(self, deb_path):
         """处理.deb文件 - 提示解包"""
@@ -497,14 +951,14 @@ class DebPackageGUI(QMainWindow):
 
         # 询问用户解包选项
         msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("解包确认")
-        msg_box.setText(f"是否解包文件: {os.path.basename(deb_path)}?")
-        msg_box.setInformativeText(f"选择解包选项:")
+        msg_box.setWindowTitle(self.lang_mgr.get_text("unpack_confirm"))
+        msg_box.setText(self.lang_mgr.format_text("unpack_question", os.path.basename(deb_path)))
+        msg_box.setInformativeText(self.lang_mgr.get_text("unpack_options"))
 
         # 添加按钮
-        auto_btn = msg_box.addButton("自动解包", QMessageBox.ButtonRole.AcceptRole)
-        manual_btn = msg_box.addButton("手动选择目录", QMessageBox.ButtonRole.ActionRole)
-        cancel_btn = msg_box.addButton("取消", QMessageBox.ButtonRole.RejectRole)
+        auto_btn = msg_box.addButton(self.lang_mgr.get_text("auto_unpack"), QMessageBox.ButtonRole.AcceptRole)
+        manual_btn = msg_box.addButton(self.lang_mgr.get_text("manual_select_dir"), QMessageBox.ButtonRole.ActionRole)
+        cancel_btn = msg_box.addButton(self.lang_mgr.get_text("cancel"), QMessageBox.ButtonRole.RejectRole)
 
         # 设置默认按钮
         msg_box.setDefaultButton(auto_btn)
@@ -522,7 +976,7 @@ class DebPackageGUI(QMainWindow):
             # 手动选择输出目录
             output_dir = QFileDialog.getExistingDirectory(
                 self,
-                "选择解包输出目录",
+                self.lang_mgr.get_text("select_unpack_output"),
                 self.last_output_dir
             )
 
@@ -540,8 +994,8 @@ class DebPackageGUI(QMainWindow):
         # 询问用户是否打包
         result = QMessageBox.question(
             self,
-            "打包确认",
-            f"是否将文件夹打包为.deb?\n{folder_path}",
+            self.lang_mgr.get_text("repack_confirm"),
+            self.lang_mgr.format_text("repack_question", folder_path),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
 
@@ -584,14 +1038,36 @@ class DebPackageGUI(QMainWindow):
 
     def execute_command(self):
         """执行命令行输入的命令"""
-        command = self.cmd_entry.text()
+        command = self.cmd_entry.text().strip()
         if not command:
             return
 
-        self.log(f"执行命令: {command}", "info")
-        self.cmd_entry.clear()
+        # 增加对命令的扩展处理
+        # 支持直接打开文件夹的特殊命令
+        if command.startswith("open ") or command.startswith("cd "):
+            path = command.split(" ", 1)[1].strip('"').strip("'")
+            if os.path.exists(path):
+                if os.path.isdir(path):
+                    self.log(f"打开文件夹: {path}", "info")
+                    self.open_folder(path)
+                    self.cmd_entry.clear()
+                    return
+                elif os.path.isfile(path):
+                    self.log(f"打开文件: {path}", "info")
+                    self.open_file(path)
+                    self.cmd_entry.clear()
+                    return
 
-        self.command_thread = CommandThread(command)
+        self.log(f"执行命令: {command}", "info")
+
+        # 处理命令历史
+        self.handle_command_history(command)
+
+        # 保留命令在输入框中，方便再次修改
+        # self.cmd_entry.clear()
+
+        # 执行命令
+        self.command_thread = CommandThread(command, self.lang_mgr)
         self.command_thread.output_received.connect(self.handle_command_output)
         self.command_thread.command_finished.connect(self.handle_command_finished)
         self.command_thread.start()
@@ -603,9 +1079,9 @@ class DebPackageGUI(QMainWindow):
     def handle_command_finished(self, return_code):
         """处理命令执行完成"""
         if return_code == 0:
-            self.log("命令执行完成", "success")
+            self.log(self.lang_mgr.get_text("cmd_complete"), "success")
         else:
-            self.log(f"命令返回错误代码: {return_code}", "error")
+            self.log(self.lang_mgr.format_text("cmd_return_error", return_code), "error")
 
     def unpack_deb(self):
         """通过按钮触发解包操作"""
@@ -824,8 +1300,8 @@ class DebPackageGUI(QMainWindow):
             # 显示成功消息框
             result = QMessageBox.question(
                 self,
-                "解包完成",
-                f"成功解包到:\n{target_dir}\n\n是否打开解包后的文件夹?",
+                self.lang_mgr.get_text("unpack_complete"),
+                self.lang_mgr.format_text("unpack_success", target_dir),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
 
@@ -838,7 +1314,9 @@ class DebPackageGUI(QMainWindow):
             self.status_bar.showMessage("解包失败")
 
             # 显示错误消息
-            QMessageBox.critical(self, "解包失败", f"无法解包。详细信息:\n{message}")
+            QMessageBox.critical(self,
+                                 self.lang_mgr.get_text("unpack_error"),
+                                 self.lang_mgr.format_text("unpack_failed", message))
 
     def _handle_unpack_exception(self, error_msg):
         """处理解包过程中的异常"""
@@ -858,7 +1336,19 @@ class DebPackageGUI(QMainWindow):
             else:  # Linux
                 subprocess.run(["xdg-open", path])
         except Exception as e:
-            self.log(f"无法打开文件夹: {e}", "error")
+            self.log(self.lang_mgr.format_text("cannot_open_folder", e), "error")
+
+    def open_file(self, path):
+        """使用默认应用打开文件"""
+        try:
+            if platform.system() == "Windows":
+                os.startfile(path)
+            elif platform.system() == "Darwin":  # macOS
+                subprocess.run(["open", path])
+            else:  # Linux
+                subprocess.run(["xdg-open", path])
+        except Exception as e:
+            self.log(f"无法打开文件: {e}", "error")
 
     def repack_folder(self):
         """通过按钮触发重新打包操作"""
@@ -1053,8 +1543,8 @@ class DebPackageGUI(QMainWindow):
             # 显示成功消息框
             result = QMessageBox.question(
                 self,
-                "打包完成",
-                f"成功创建.deb软件包:\n{out_path}\n\n是否打开包含该文件的文件夹?",
+                self.lang_mgr.get_text("pack_complete"),
+                self.lang_mgr.format_text("pack_success", out_path),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
 
@@ -1079,33 +1569,34 @@ class DebPackageGUI(QMainWindow):
 
     def log_welcome_message(self):
         """显示欢迎消息和使用教程"""
+        # 使用翻译系统构建欢迎消息
         welcome_messages = [
-            "欢迎使用iOS .deb Tweak编辑器! 程序已准备就绪。", "info",
+            self.lang_mgr.get_text("welcome"), "info",
             "", None,
-            "=== 软件简介 ===", "info",
-            "这是一个用于解包和重新打包iOS .deb文件的工具，特别适合iOS越狱插件开发者和修改者。", None,
+            self.lang_mgr.get_text("intro_title"), "info",
+            self.lang_mgr.get_text("intro_text"), None,
             "", None,
-            "=== 主要功能 ===", "info",
-            "1. 解包.deb文件：将.deb文件解压缩到文件夹中，方便查看和修改", None,
-            "2. 重新打包文件夹：将修改后的文件夹重新打包为.deb文件", None,
-            "3. 支持文件拖放：直接拖放.deb文件到窗口即可开始解包", None,
-            "4. 支持命令行：可以执行自定义命令", None,
+            self.lang_mgr.get_text("features_title"), "info",
+            self.lang_mgr.get_text("feature_1"), None,
+            self.lang_mgr.get_text("feature_2"), None,
+            self.lang_mgr.get_text("feature_3"), None,
+            self.lang_mgr.get_text("feature_4"), None,
             "", None,
-            "=== 使用方法 ===", "info",
-            "解包.deb文件:", None,
-            "- 方法1: 点击\"解包.deb文件\"按钮，选择文件和输出目录", None,
-            "- 方法2: 直接将.deb文件拖放到应用窗口中", None,
+            self.lang_mgr.get_text("usage_title"), "info",
+            self.lang_mgr.get_text("usage_unpack_title"), None,
+            self.lang_mgr.get_text("usage_unpack_1"), None,
+            self.lang_mgr.get_text("usage_unpack_2"), None,
             "", None,
-            "重新打包文件夹:", None,
-            "- 方法1: 点击\"重新打包文件夹\"按钮，选择含有DEBIAN目录的文件夹", None,
-            "- 方法2: 直接将含有DEBIAN目录的文件夹拖放到应用窗口中", None,
+            self.lang_mgr.get_text("usage_repack_title"), None,
+            self.lang_mgr.get_text("usage_repack_1"), None,
+            self.lang_mgr.get_text("usage_repack_2"), None,
             "", None,
-            "=== 版权信息 ===", "info",
-            "© 2025 Evil0ctal", None,
-            "项目地址: https://github.com/Evil0ctal/SimpleTweakEditor", None,
-            "许可证: Apache License 2.0", None,
+            self.lang_mgr.get_text("copyright_title"), "info",
+            self.lang_mgr.get_text("copyright_text"), None,
+            self.lang_mgr.get_text("project_url"), None,
+            self.lang_mgr.get_text("license"), None,
             "", None,
-            "准备就绪！请开始操作...", "success"
+            self.lang_mgr.get_text("ready_to_go"), "success"
         ]
 
         # 批量显示消息
@@ -1140,21 +1631,201 @@ class DebPackageGUI(QMainWindow):
     def show_about_dialog(self):
         """显示关于对话框"""
         about_text = f"""
-        <h3>iOS .deb Tweak编辑器</h3>
-        <p>版本: 1.0.0</p>
-        <p>一个用于解包和重新打包iOS .deb文件的工具。</p>
-        <p>© 2025 Evil0ctal</p>
-        <p>项目地址: <a href="https://github.com/Evil0ctal/SimpleTweakEditor">https://github.com/Evil0ctal/SimpleTweakEditor</a></p>
-        <p>许可证: Apache License 2.0</p>
+        <h3>{self.lang_mgr.get_text("about_title")}</h3>
+        <p>{self.lang_mgr.get_text("about_version")}</p>
+        <p>{self.lang_mgr.get_text("about_description")}</p>
+        <p>{self.lang_mgr.get_text("copyright_text")}</p>
+        <p>{self.lang_mgr.get_text("project_url")}</p>
+        <p>{self.lang_mgr.get_text("license")}</p>
         """
 
-        QMessageBox.about(self, "关于", about_text)
+        QMessageBox.about(self, self.lang_mgr.get_text("about"), about_text)
 
 
 # 忽略macOS上的NSOpenPanel警告
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
+
+def print_usage():
+    """ 打印命令行使用说明 """
+    print("iOS .deb Tweak编辑器 - 命令行使用说明")
+    print("\n基本用法:")
+    print("  python SimpleTweakEditor.py [options] [file.deb|folder]")
+    print("\n选项:")
+    print("  --help, -h           显示这个帮助信息")
+    print("  --unpack, -u <deb>   解包指定的.deb文件")
+    print("  --repack, -r <dir>   打包指定的文件夹")
+    print("  --output, -o <dir>   指定输出目录(与unpack/repack一起使用)")
+    print("  --batch, -b          批处理模式，不显示GUI")
+    print("  --lang <code>        设置语言 (en/zh)")
+    print("\n例子:")
+    print("  python SimpleTweakEditor.py                              # 启动GUI模式")
+    print("  python SimpleTweakEditor.py file.deb                    # 在GUI中打开.deb文件")
+    print("  python SimpleTweakEditor.py --unpack file.deb           # 解包file.deb文件")
+    print("  python SimpleTweakEditor.py -u file.deb -o ~/output     # 解包到指定目录")
+    print("  python SimpleTweakEditor.py -r ~/tweakfolder            # 打包指定文件夹")
+    print("  python SimpleTweakEditor.py -b -u *.deb                 # 批量解包所有deb文件")
+
+
+def batch_unpack_deb(deb_path, output_dir=None):
+    """ 命令行模式下解包deb文件 """
+    if not os.path.exists(deb_path):
+        print(f"\n错误: 文件 '{deb_path}' 不存在")
+        return False
+
+    if not deb_path.lower().endswith('.deb'):
+        print(f"\n错误: '{deb_path}' 不是.deb文件")
+        return False
+
+    # 准备输出目录
+    if output_dir is None:
+        # 默认在当前目录下创建以deb文件名的文件夹
+        deb_name = os.path.splitext(os.path.basename(deb_path))[0]
+        output_dir = os.path.join(os.path.dirname(deb_path), deb_name)
+
+    # 创建输出目录
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(f"\n正在解包 '{deb_path}' 到 '{output_dir}'...")
+
+    try:
+        # 提取文件系统内容
+        result1 = subprocess.run(
+            ["dpkg-deb", "-x", deb_path, output_dir],
+            capture_output=True, text=True
+        )
+
+        # 提取control文件到DEBIAN/
+        debian_dir = os.path.join(output_dir, "DEBIAN")
+        os.makedirs(debian_dir, exist_ok=True)
+        result2 = subprocess.run(
+            ["dpkg-deb", "-e", deb_path, debian_dir],
+            capture_output=True, text=True
+        )
+
+        # 检查解包结果
+        if result1.returncode != 0 or result2.returncode != 0:
+            print("\n解包失败:")
+            if result1.stderr: print(result1.stderr)
+            if result2.stderr: print(result2.stderr)
+            return False
+
+        print(f"\n成功解包到: {output_dir}")
+        return True
+
+    except Exception as e:
+        print(f"\n错误: {str(e)}")
+        return False
+
+
+def batch_repack_folder(folder_path, output_path=None):
+    """ 命令行模式下打包文件夹 """
+    if not os.path.isdir(folder_path):
+        print(f"\n错误: '{folder_path}' 不是有效目录")
+        return False
+
+    # 检查目录结构
+    debian_dir = os.path.join(folder_path, "DEBIAN")
+    control_file = os.path.join(debian_dir, "control")
+
+    if not os.path.isdir(debian_dir):
+        print(f"\n错误: '{folder_path}' 不包含DEBIAN目录")
+        return False
+
+    if not os.path.isfile(control_file):
+        print(f"\n错误: '{debian_dir}' 不包含control文件")
+        return False
+
+    # 准备输出路径
+    if output_path is None:
+        # 从控制文件中提取软件包名称和版本
+        package_name = ""
+        version = ""
+
+        try:
+            with open(control_file, 'r') as f:
+                for line in f:
+                    if line.startswith("Package:"):
+                        package_name = line.split(":", 1)[1].strip()
+                    elif line.startswith("Version:"):
+                        version = line.split(":", 1)[1].strip()
+        except Exception as e:
+            print(f"\n警告: 无法读取control文件: {e}")
+
+        if package_name and version:
+            output_name = f"{package_name}_{version}.deb"
+        else:
+            folder_name = os.path.basename(folder_path.rstrip(os.sep))
+            output_name = f"{folder_name}.deb"
+
+        output_path = os.path.join(os.path.dirname(folder_path), output_name)
+
+    # 设置DEBIAN目录权限
+    try:
+        os.chmod(debian_dir, 0o755)
+        # 设置脚本文件权限
+        for script in ["postinst", "preinst", "postrm", "prerm"]:
+            script_path = os.path.join(debian_dir, script)
+            if os.path.isfile(script_path):
+                os.chmod(script_path, 0o755)
+    except Exception as e:
+        print(f"\n警告: 设置文件权限时出错: {e}")
+
+    print(f"\n正在打包 '{folder_path}' 到 '{output_path}'...")
+
+    try:
+        # 执行打包命令
+        result = subprocess.run(
+            ["dpkg-deb", "--root-owner-group", "-b", folder_path, output_path],
+            capture_output=True, text=True
+        )
+
+        # 检查打包结果
+        if result.returncode != 0:
+            print("\n打包失败:")
+            if result.stderr: print(result.stderr)
+            return False
+
+        print(f"\n成功打包到: {output_path}")
+        return True
+
+    except Exception as e:
+        print(f"\n错误: {str(e)}")
+        return False
+
+
 if __name__ == "__main__":
+    # 处理命令行参数
+    import argparse
+
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--help', '-h', action='store_true', help='显示帮助信息')
+    parser.add_argument('--unpack', '-u', metavar='DEB_FILE', help='解包指定的.deb文件')
+    parser.add_argument('--repack', '-r', metavar='FOLDER', help='打包指定的文件夹')
+    parser.add_argument('--output', '-o', metavar='DIR', help='指定输出目录')
+    parser.add_argument('--batch', '-b', action='store_true', help='批处理模式，不显示GUI')
+    parser.add_argument('--lang', choices=['en', 'zh'], help='设置语言 (en/zh)')
+    parser.add_argument('file_or_folder', nargs='?', help='要处理的.deb文件或文件夹')
+
+    args, unknown = parser.parse_known_args()
+
+    # 显示帮助
+    if args.help:
+        print_usage()
+        sys.exit(0)
+
+    # 批处理模式
+    if args.batch:
+        if args.unpack:
+            success = batch_unpack_deb(args.unpack, args.output)
+            sys.exit(0 if success else 1)
+        elif args.repack:
+            success = batch_repack_folder(args.repack, args.output)
+            sys.exit(0 if success else 1)
+        else:
+            print("\n错误: 批处理模式下必须指定--unpack或--repack选项")
+            sys.exit(1)
+
     # 忽略macOS上的NSOpenPanel警告
     if platform.system() == "Darwin":
         # 禁用Qt调试输出
@@ -1168,17 +1839,21 @@ if __name__ == "__main__":
     # 设置应用程序样式
     app.setStyle("Fusion")
 
-    # 创建并显示主窗口
+    # 创建主窗口
     main_window = DebPackageGUI()
 
-    # 处理通过命令行参数打开的文件
-    if len(sys.argv) > 1:
-        file_path = sys.argv[1]
-        if os.path.isfile(file_path) and file_path.lower().endswith('.deb'):
-            QTimer.singleShot(500, lambda: main_window.process_deb_file(file_path))
-        elif os.path.isdir(file_path):
-            if os.path.isdir(os.path.join(file_path, "DEBIAN")):
-                QTimer.singleShot(500, lambda: main_window.process_folder(file_path))
+    # 设置语言
+    if args.lang:
+        main_window.switch_language(args.lang)
+
+    # 处理命令行指定的文件或文件夹
+    input_path = args.file_or_folder or args.unpack or args.repack
+    if input_path:
+        if os.path.isfile(input_path) and input_path.lower().endswith('.deb'):
+            QTimer.singleShot(500, lambda: main_window.process_deb_file(input_path))
+        elif os.path.isdir(input_path):
+            if os.path.isdir(os.path.join(input_path, "DEBIAN")):
+                QTimer.singleShot(500, lambda: main_window.process_folder(input_path))
 
     main_window.show()
 
