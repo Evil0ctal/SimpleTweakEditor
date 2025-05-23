@@ -1,0 +1,330 @@
+# -*- coding: utf-8 -*-
+"""
+翻译数据模块
+包含所有支持语言的翻译文本
+"""
+
+
+class Translations:
+    """多语言翻译数据类"""
+
+    EN = {
+        # Common
+        "app_title": "iOS .deb Tweak Editor",
+        "ready": "Ready",
+        "file": "File",
+        "settings": "Settings",
+        "help": "Help",
+        "about": "About",
+        "exit": "Exit",
+        "cancel": "Cancel",
+        "ok": "OK",
+        "yes": "Yes",
+        "no": "No",
+        "success": "Success",
+        "error": "Error",
+        "warning": "Warning",
+        "info": "Information",
+
+        # Menu and buttons
+        "unpack_deb": "Unpack .deb File",
+        "repack_folder": "Repack Folder",
+        "debug_mode": "Debug Mode",
+        "language": "Language",
+        "clear_log": "Clear Log",
+        "execute": "Execute",
+        "save": "Save",
+        "browse": "Browse",
+        "clear": "Clear",
+        "clear_command": "Clear command",
+
+        # UI labels
+        "tip_drag_drop": "Tip: Drop a .deb file to unpack, or a folder to repack.",
+        "drop_zone": "Drop .deb files or folders with DEBIAN directory here",
+        "operation_log": "Operation Log",
+        "command_line": "Command Line",
+        "quick_commands": "Quick Commands",
+
+        # Quick command presets
+        "cmd_preset_title": "--- Quick Commands ---",
+        "cmd_target_required": "--- Select Target File/Folder First ---",
+        "cmd_list_packages": "List installed packages",
+        "cmd_find_deb_files": "Find .deb files in current directory",
+        "cmd_view_deb_info": "View .deb package info",
+        "cmd_list_debian_dir": "List DEBIAN directory",
+        "cmd_set_script_permission": "Set script permissions",
+        "cmd_view_control": "View control file content",
+        "cmd_check_deb_structure": "Check .deb file structure",
+        "cmd_extract_deb_data": "Extract data.tar from .deb",
+        "cmd_extract_deb_control": "Extract control.tar from .deb",
+        "cmd_list_deb_contents": "List .deb file contents",
+        "cmd_check_folder_size": "Check folder size",
+        "cmd_find_large_files": "Find large files (>1MB)",
+        "cmd_list_permissions": "List file permissions",
+        "cmd_verify_signatures": "Verify package signatures",
+        "cmd_placeholder": "Enter command or select from quick commands...",
+        "select_target_file": "Select Target File",
+        "select_target_folder": "Select Target Folder",
+        "no_target_selected": "No target selected",
+        "clear_target_selection": "Clear target selection",
+
+        # Dialogs and messages
+        "unpack_confirm": "Unpack File",
+        "unpack_question": "Do you want to unpack this file: {0}?",
+        "unpack_options": "Select unpack options:",
+        "auto_unpack": "Auto Unpack",
+        "manual_select_dir": "Select Directory Manually",
+        "select_unpack_output": "Select Unpack Output Directory",
+        "overwrite_dir": "Overwrite Directory",
+        "overwrite_question": "Directory '{0}' already exists.\nDelete its contents and unpack again?",
+        "unpacking": "Unpacking '{0}'...",
+        "unpacking_file": "Unpacking file...",
+        "unpack_complete": "Unpack Complete",
+        "unpack_success": "Successfully unpacked to:\n{0}\n\nDo you want to open the unpacked folder?",
+        "unpack_with_structure": "Successfully unpacked to:\n{0}\n\nWould you like to generate a directory structure file (DIRECTORY_STRUCTURE.md) to help analyze the package contents?",
+        "generate_structure": "Generate Structure",
+        "open_folder": "Open Folder",
+        "structure_generated": "Directory structure file generated: {0}",
+        "structure_generation_failed": "Failed to generate directory structure: {0}",
+        "unpack_failed": "Unpack failed. Details:\n{0}",
+        "unpack_error": "Error: Unpack failed",
+        "unpack_exception": "Exception during unpacking: {0}",
+
+        "repack_confirm": "Repack Confirmation",
+        "repack_question": "Do you want to package this folder as .deb?\n{0}",
+        "repack_invalid_folder": "Invalid folder",
+        "repack_missing_debian": "The selected folder is not a valid package directory (missing DEBIAN/control).",
+        "save_repacked_deb": "Save Repacked .deb As",
+        "setting_debian_permissions": "Setting permissions for DEBIAN directory files...",
+        "set_permission": "Set {0} permission for {1}",
+        "permission_error": "Error setting file permissions: {0}",
+        "permission_warning": "Permission Warning",
+        "permission_warning_msg": "Error setting some file permissions, this may affect the packaging result.",
+        "packing": "Packing '{0}'...",
+        "packing_file": "Packing file...",
+        "pack_complete": "Packaging Complete",
+        "pack_success": "Successfully created .deb package:\n{0}\n\nDo you want to open the folder containing this file?",
+        "pack_failed": "Packaging failed. Details:\n{0}",
+        "pack_error": "Error: Packaging failed",
+        "pack_exception": "Exception during packaging: {0}",
+
+        # Control editor
+        "edit_control": "Edit Control File",
+        "check_control": "Check Control File Format",
+        "control_check_label": "Check or edit DEBIAN/control metadata:",
+        "control_tip": "Tip: Ensure all fields are in the correct format, with each field ending with a newline. Packages must include at least Package, Version, Architecture, and Description fields.",
+        "control_format_error": "Control File Format Error",
+        "missing_required_fields": "Missing required fields: {0}\n\nA valid control file must include at least these fields:\nPackage: package name\nVersion: version number\nArchitecture: architecture (e.g., iphoneos-arm64)\nDescription: package description",
+        "field_format_error": "Field format error: '{0}'\n\nFields should be in 'Field: Value' format, or continuation lines for multi-line fields (starting with a space).",
+        "control_valid": "Control File Format Valid",
+        "control_valid_msg": "Control file format validation passed!",
+
+        # Errors and warnings
+        "operation_in_progress": "An operation is already in progress, please try again later.",
+        "cannot_read_control": "Cannot read control file: {0}",
+        "cannot_write_control": "Cannot write control file: {0}",
+        "unsupported_file": "Unsupported file type: {0}",
+        "unsupported_file_msg": "Please drop a .deb file or a folder containing a DEBIAN directory",
+        "invalid_dropfolder": "The dropped folder is not a valid deb package structure (missing DEBIAN directory): {0}",
+        "cmd_exec_error": "Error executing command: {0}",
+        "cmd_return_error": "Command returned error code: {0}",
+        "cmd_complete": "Command execution complete",
+        "cannot_open_folder": "Cannot open folder: {0}",
+        "dpkg_not_found": "'dpkg-deb' tool not installed or not in PATH.\nPlease install dpkg to use this feature.",
+        "debug_enabled": "Debug mode enabled",
+        "debug_disabled": "Debug mode disabled",
+
+        # Welcome messages
+        "welcome": "Welcome to iOS .deb Tweak Editor! Program is ready.",
+        "intro_title": "=== Software Introduction ===",
+        "intro_text": "This is a tool for unpacking and repacking iOS .deb files, particularly useful for iOS jailbreak tweak developers and modifiers.",
+        "features_title": "=== Main Features ===",
+        "feature_1": "1. Unpack .deb files: Extract .deb files into folders for easy viewing and modification",
+        "feature_2": "2. Repack folders: Repackage modified folders back into .deb files",
+        "feature_3": "3. Support for drag and drop: Simply drag and drop .deb files into the window to start unpacking",
+        "feature_4": "4. Command line support: Execute custom commands",
+        "usage_title": "=== Usage Instructions ===",
+        "usage_unpack_title": "Unpack .deb files:",
+        "usage_unpack_1": "- Method 1: Click the \"Unpack .deb File\" button, select file and output directory",
+        "usage_unpack_2": "- Method 2: Drag and drop .deb files directly into the application window",
+        "usage_repack_title": "Repack folders:",
+        "usage_repack_1": "- Method 1: Click the \"Repack Folder\" button, select a folder containing the DEBIAN directory",
+        "usage_repack_2": "- Method 2: Drag and drop a folder containing the DEBIAN directory into the application window",
+        "copyright_title": "=== Copyright Information ===",
+        "copyright_text": "© 2025 Evil0ctal",
+        "project_url": "Project URL: https://github.com/Evil0ctal/SimpleTweakEditor",
+        "license": "License: Apache License 2.0",
+        "ready_to_go": "Ready to go! Please begin operations...",
+
+        # About dialog
+        "about_title": "iOS .deb Tweak Editor",
+        "about_version": "Version: 1.0.0",
+        "about_description": "A tool for unpacking and repacking iOS .deb files."
+    }
+
+    ZH = {
+        # 通用
+        "app_title": "iOS .deb Tweak编辑器",
+        "ready": "就绪",
+        "file": "文件",
+        "settings": "设置",
+        "help": "帮助",
+        "about": "关于",
+        "exit": "退出",
+        "cancel": "取消",
+        "ok": "确定",
+        "yes": "是",
+        "no": "否",
+        "success": "成功",
+        "error": "错误",
+        "warning": "警告",
+        "info": "信息",
+
+        # 菜单和按钮
+        "unpack_deb": "解包 .deb 文件",
+        "repack_folder": "重新打包文件夹",
+        "debug_mode": "调试模式",
+        "language": "语言",
+        "clear_log": "清除日志",
+        "execute": "执行",
+        "save": "保存",
+        "browse": "浏览",
+        "clear": "清除",
+        "clear_command": "清除命令",
+
+        # 界面标签
+        "tip_drag_drop": "提示: 将.deb文件拖放到窗口可直接解包，将文件夹拖放可直接打包。",
+        "drop_zone": "将.deb文件或包含DEBIAN目录的文件夹拖放到此处",
+        "operation_log": "操作日志",
+        "command_line": "命令行",
+        "quick_commands": "快捷命令",
+
+        # 快捷命令预设
+        "cmd_preset_title": "--- 快捷命令 ---",
+        "cmd_target_required": "--- 请先选择目标文件/文件夹 ---",
+        "cmd_list_packages": "列出已安装包",
+        "cmd_find_deb_files": "在当前目录查找.deb文件",
+        "cmd_view_deb_info": "查看.deb包信息",
+        "cmd_list_debian_dir": "列出DEBIAN目录",
+        "cmd_set_script_permission": "设置脚本权限",
+        "cmd_view_control": "查看control文件内容",
+        "cmd_check_deb_structure": "检查.deb文件结构",
+        "cmd_extract_deb_data": "从.deb提取data.tar",
+        "cmd_extract_deb_control": "从.deb提取control.tar",
+        "cmd_list_deb_contents": "列出.deb文件内容",
+        "cmd_check_folder_size": "检查文件夹大小",
+        "cmd_find_large_files": "查找大文件(>1MB)",
+        "cmd_list_permissions": "列出文件权限",
+        "cmd_verify_signatures": "验证包签名",
+        "cmd_placeholder": "输入命令或从上方选择快捷命令...",
+        "select_target_file": "选择目标文件",
+        "select_target_folder": "选择目标文件夹",
+        "no_target_selected": "未选择目标",
+        "clear_target_selection": "清除目标选择",
+
+        # 对话框和消息
+        "unpack_confirm": "解包确认",
+        "unpack_question": "是否解包文件: {0}?",
+        "unpack_options": "选择解包选项:",
+        "auto_unpack": "自动解包",
+        "manual_select_dir": "手动选择目录",
+        "select_unpack_output": "选择解包输出目录",
+        "overwrite_dir": "覆盖目录",
+        "overwrite_question": "目录 '{0}' 已存在。\n是否删除其内容并重新解包?",
+        "unpacking": "正在解包 '{0}'...",
+        "unpacking_file": "正在解包文件...",
+        "unpack_complete": "解包完成",
+        "unpack_success": "成功解包到:\n{0}\n\n是否打开解包后的文件夹?",
+        "unpack_with_structure": "成功解包到:\n{0}\n\n是否生成目录结构文件(DIRECTORY_STRUCTURE.md)以便分析包内容？",
+        "generate_structure": "生成结构",
+        "open_folder": "打开文件夹",
+        "structure_generated": "目录结构文件已生成: {0}",
+        "structure_generation_failed": "生成目录结构失败: {0}",
+        "unpack_failed": "解包失败。详细信息:\n{0}",
+        "unpack_error": "错误: 解包失败",
+        "unpack_exception": "解包过程中出现异常: {0}",
+
+        "repack_confirm": "打包确认",
+        "repack_question": "是否将文件夹打包为.deb?\n{0}",
+        "repack_invalid_folder": "无效文件夹",
+        "repack_missing_debian": "所选文件夹不是有效的软件包目录(缺少DEBIAN/control)。",
+        "save_repacked_deb": "将重新打包的.deb保存为",
+        "setting_debian_permissions": "正在设置DEBIAN目录中的文件权限...",
+        "set_permission": "为{1}设置{0}权限",
+        "permission_error": "设置文件权限时出错: {0}",
+        "permission_warning": "权限警告",
+        "permission_warning_msg": "设置某些文件权限时出错，这可能会影响打包结果。",
+        "packing": "正在将文件夹 '{0}' 打包...",
+        "packing_file": "正在打包文件...",
+        "pack_complete": "打包完成",
+        "pack_success": "成功创建.deb软件包:\n{0}\n\n是否打开包含该文件的文件夹?",
+        "pack_failed": "打包失败。详细信息:\n{0}",
+        "pack_error": "错误: 打包失败",
+        "pack_exception": "打包过程中出现异常: {0}",
+
+        # Control编辑器
+        "edit_control": "编辑Control文件",
+        "check_control": "检查Control文件格式",
+        "control_check_label": "检查或编辑DEBIAN/control元数据:",
+        "control_tip": "提示: 确保所有字段格式正确，每个字段以换行符结束。包必须至少包含Package、Version、Architecture和Description字段。",
+        "control_format_error": "Control文件格式错误",
+        "missing_required_fields": "缺少必填字段: {0}\n\n一个有效的control文件必须至少包含以下字段:\nPackage: 软件包名称\nVersion: 版本号\nArchitecture: 架构（如iphoneos-arm64）\nDescription: 软件包描述",
+        "field_format_error": "字段格式不正确: '{0}'\n\n字段应该采用 'Field: Value' 格式，或者是多行字段的延续行（以空格开头）。",
+        "control_valid": "Control文件格式正确",
+        "control_valid_msg": "Control文件格式验证通过！",
+
+        # 错误和警告
+        "operation_in_progress": "有操作正在进行中，请稍后再试。",
+        "cannot_read_control": "无法读取control文件: {0}",
+        "cannot_write_control": "无法写入control文件: {0}",
+        "unsupported_file": "不支持的文件类型: {0}",
+        "unsupported_file_msg": "请拖放.deb文件或包含DEBIAN目录的文件夹",
+        "invalid_dropfolder": "拖放的文件夹不是有效的deb包结构（缺少DEBIAN目录）: {0}",
+        "cmd_exec_error": "执行命令时出错: {0}",
+        "cmd_return_error": "命令返回错误代码: {0}",
+        "cmd_complete": "命令执行完成",
+        "cannot_open_folder": "无法打开文件夹: {0}",
+        "dpkg_not_found": "未安装'dpkg-deb'工具或其不在PATH中。\n请安装dpkg以使用此功能。",
+        "debug_enabled": "调试模式已开启",
+        "debug_disabled": "调试模式已关闭",
+
+        # 欢迎消息
+        "welcome": "欢迎使用iOS .deb Tweak编辑器! 程序已准备就绪。",
+        "intro_title": "=== 软件简介 ===",
+        "intro_text": "这是一个用于解包和重新打包iOS .deb文件的工具，特别适合iOS越狱插件开发者和修改者。",
+        "features_title": "=== 主要功能 ===",
+        "feature_1": "1. 解包.deb文件：将.deb文件解压缩到文件夹中，方便查看和修改",
+        "feature_2": "2. 重新打包文件夹：将修改后的文件夹重新打包为.deb文件",
+        "feature_3": "3. 支持文件拖放：直接拖放.deb文件到窗口即可开始解包",
+        "feature_4": "4. 支持命令行：可以执行自定义命令",
+        "usage_title": "=== 使用方法 ===",
+        "usage_unpack_title": "解包.deb文件:",
+        "usage_unpack_1": "- 方法1: 点击\"解包.deb文件\"按钮，选择文件和输出目录",
+        "usage_unpack_2": "- 方法2: 直接将.deb文件拖放到应用窗口中",
+        "usage_repack_title": "重新打包文件夹:",
+        "usage_repack_1": "- 方法1: 点击\"重新打包文件夹\"按钮，选择含有DEBIAN目录的文件夹",
+        "usage_repack_2": "- 方法2: 直接将含有DEBIAN目录的文件夹拖放到应用窗口中",
+        "copyright_title": "=== 版权信息 ===",
+        "copyright_text": "© 2025 Evil0ctal",
+        "project_url": "项目地址: https://github.com/Evil0ctal/SimpleTweakEditor",
+        "license": "许可证: Apache License 2.0",
+        "ready_to_go": "准备就绪！请开始操作...",
+
+        # 关于对话框
+        "about_title": "iOS .deb Tweak编辑器",
+        "about_version": "版本: 1.0.0",
+        "about_description": "一个用于解包和重新打包iOS .deb文件的工具。"
+    }
+
+    @classmethod
+    def get_supported_languages(cls):
+        """获取支持的语言列表"""
+        return ["en", "zh"]
+
+    @classmethod
+    def get_language_names(cls):
+        """获取语言名称映射"""
+        return {
+            "en": "English",
+            "zh": "中文"
+        }

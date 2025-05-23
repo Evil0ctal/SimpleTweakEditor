@@ -1,0 +1,27 @@
+# SimpleTweakEditor Requirements
+# iOS .deb Tweak Editor 依赖项
+
+# Core dependencies
+PyQt6>=6.0.0
+Pillow>=9.0.0  # For icon generation
+
+# Optional dependencies for enhanced functionality
+# (These are not strictly required but recommended)
+
+# For better file handling on different platforms
+pathlib2; python_version < "3.4"
+
+# For improved JSON handling
+ujson; platform_system != "Windows"
+
+# Development dependencies (optional)
+# pytest>=6.0.0
+# pytest-qt>=4.0.0
+# black>=21.0.0
+# flake8>=3.8.0
+
+# Platform-specific dependencies
+# dpkg-deb tool is required for .deb file operations
+# Linux: sudo apt-get install dpkg
+# macOS: brew install dpkg
+# Windows: Use WSL or install dpkg through other means
