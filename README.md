@@ -1,10 +1,22 @@
 # SimpleTweakEditor
 
-iOS .deb Tweak Editor - 专业的iOS .deb文件编辑工具 / Professional iOS .deb Package Editor
+<div align="center">
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
-[![PyQt6](https://img.shields.io/badge/PyQt6-6.0%2B-green)](https://pypi.org/project/PyQt6/)
+![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.0-blue?style=for-the-badge&logo=apple&logoColor=white)
+
+[![License](https://img.shields.io/github/license/Evil0ctal/SimpleTweakEditor?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![PyQt6](https://img.shields.io/badge/PyQt6-6.0%2B-green?style=flat-square&logo=qt&logoColor=white)](https://pypi.org/project/PyQt6/)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-lightgrey?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor)
+[![GitHub Stars](https://img.shields.io/github/stars/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/stargazers)
+[![Downloads](https://img.shields.io/github/downloads/Evil0ctal/SimpleTweakEditor/total?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
+[![Release](https://img.shields.io/github/v/release/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases/latest)
+
+**专业的iOS .deb文件编辑工具 / Professional iOS .deb Package Editor**
+
+[English](README_EN.md) | [快速开始](QUICK_START.md) | [下载](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
+
+</div>
 
 ## 功能特性 / Features
 
@@ -234,6 +246,16 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ---
 
+<div align="center">
+
 **注意 / Note**: 本工具仅用于合法的iOS开发和调试目的。请遵守相关法律法规。
 
 **Note**: This tool is for legitimate iOS development and debugging purposes only. Please comply with relevant laws and regulations.
+
+---
+
+Made with ❤️ by [Evil0ctal](https://github.com/Evil0ctal)
+
+⭐ 如果觉得有帮助，请给项目一个Star！/ Star this project if you find it helpful!
+
+</div>
