@@ -4,6 +4,12 @@
 
 We are excited to announce the first official release of SimpleTweakEditor - a professional iOS .deb package editor with a modern GUI interface.
 
+### 🆕 New in This Release
+- **Standalone macOS App** - New build that includes all Python dependencies (~31MB)
+- **Multi-language Support** - Automatic system language detection for English/Chinese
+- **Smart Tool Detection** - Automatically finds dpkg-deb in various system paths
+- **Improved Build Scripts** - Separate scripts for standard and standalone builds
+
 ## ✨ Features
 
 ### Core Functionality
@@ -13,10 +19,11 @@ We are excited to announce the first official release of SimpleTweakEditor - a p
 - **Drag & Drop support** - Simply drag files/folders to the application
 
 ### User Experience
-- **Multi-language support** - English and Chinese interfaces
+- **Multi-language support** - English and Chinese interfaces with automatic system language detection
 - **Dark mode** - Automatic system theme adaptation
 - **Command line interface** - Execute custom dpkg commands
 - **Batch operations** - Command-line mode for automation
+- **Smart dpkg-deb detection** - Automatically finds dpkg-deb in multiple system paths
 
 ### Security
 - **Path validation** - Protection against path traversal attacks
@@ -45,12 +52,20 @@ We are excited to announce the first official release of SimpleTweakEditor - a p
 
 ### macOS
 
-#### Option 1: DMG Installer (Recommended)
-1. Download `SimpleTweakEditor-1.0.0-macOS.dmg`
-2. Open the DMG file
-3. Drag SimpleTweakEditor.app to Applications
-4. First launch: Right-click and select "Open"
-5. Install dependencies:
+#### Option 1: Standalone App (Recommended)
+1. Download `SimpleTweakEditor.app` from the macOS folder
+2. Drag SimpleTweakEditor.app to Applications
+3. First launch: Right-click and select "Open"
+4. This version includes all Python dependencies
+5. Only need to install dpkg:
+   ```bash
+   brew install dpkg
+   ```
+
+#### Option 2: Standard App
+1. Download the standard `SimpleTweakEditor.app`
+2. Drag to Applications folder
+3. Install dependencies:
    ```bash
    # Install Python dependencies
    pip3 install PyQt6 Pillow
@@ -59,11 +74,9 @@ We are excited to announce the first official release of SimpleTweakEditor - a p
    brew install dpkg
    ```
 
-#### Option 2: Standalone Executable
-1. Download `SimpleTweakEditor-1.0.0-Darwin.tar.gz`
-2. Extract the archive
-3. Make executable: `chmod +x SimpleTweakEditor`
-4. Run: `./SimpleTweakEditor`
+#### Option 3: Source Package
+1. Download `SimpleTweakEditor-1.0.0-source.tar.gz`
+2. Extract and run with Python
 
 ### Linux
 
@@ -112,9 +125,10 @@ We are excited to announce the first official release of SimpleTweakEditor - a p
 
 This tool implements several security measures:
 - Path traversal protection
-- File size limitations
-- Secure file permissions
+- File size limitations (500MB max)
+- Secure file permissions (0600 for config files)
 - No network access required
+- Safe temporary file operations
 
 ## 📝 License
 

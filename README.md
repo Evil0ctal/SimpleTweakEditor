@@ -22,10 +22,11 @@ iOS .deb Tweak Editor - 专业的iOS .deb文件编辑工具 / Professional iOS .
 - **批处理模式** - 支持命令行批量操作
 
 ### 🌍 用户体验 / User Experience
-- **多语言支持** - 中文/英文界面
+- **多语言支持** - 中文/英文界面，自动检测系统语言
 - **暗色模式** - 自动适配系统主题
 - **状态保存** - 记住窗口大小和设置
 - **智能提示** - 操作引导和错误提示
+- **智能查找** - 自动在多个路径查找dpkg-deb工具
 
 ## 安装 / Installation
 
@@ -60,7 +61,9 @@ sudo apt-get install dpkg
 ### 🚀 快速开始 / Quick Start
 
 #### 下载预构建版本 / Download Pre-built Releases
-- **macOS**: 下载 `SimpleTweakEditor.app` 或 `.dmg` 安装包
+- **macOS**: 
+  - **推荐**: 下载独立版 `SimpleTweakEditor.app` (包含所有依赖，约31MB)
+  - **备选**: 下载标准版 `.app` 或 `.dmg` 安装包 (需要Python环境)
 - **Linux**: 下载对应的可执行文件
 - 从 [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases) 页面下载
 
@@ -96,7 +99,12 @@ python main.py --lang en  # English
 # 进入构建脚本目录 / Enter build scripts directory
 cd build_scripts
 
-# 构建 macOS 应用包 / Build macOS app bundle
+# 构建独立版应用包（推荐）/ Build standalone app bundle (recommended)
+# 包含所有Python依赖，用户无需安装Python或PyQt6
+python3 build_macos_app_standalone.py
+
+# 或构建标准版应用包 / Or build standard app bundle
+# 需要用户系统有Python和依赖
 python3 build_macos_app.py
 
 # 应用将生成在 / App will be created at:
@@ -163,10 +171,11 @@ SimpleTweakEditor/
         └── translations.py  # 翻译数据 / Translation data
 │
 ├── build_scripts/            # 构建脚本 / Build scripts
-│   ├── build_release.py     # PyInstaller 构建脚本
-│   ├── build_macos_app.py   # macOS .app 构建脚本
+│   ├── build_macos_app.py   # macOS 标准版 .app 构建脚本
+│   ├── build_macos_app_standalone.py # macOS 独立版 .app 构建脚本
 │   ├── build_linux_appimage.sh # Linux AppImage 脚本
-│   └── prepare_release.sh   # 发布准备脚本
+│   ├── prepare_release.sh   # 发布准备脚本
+│   └── clean_all.sh        # 清理所有构建文件
 │
 └── releases/                # 发布文件 / Release files
     └── v1.0.0/             # 版本发布目录
@@ -198,10 +207,12 @@ SimpleTweakEditor/
 ### v1.0.0 (2025-01)
 - ✨ 完整的GUI界面
 - 🔐 安全性增强
-- 🌍 中英文支持
+- 🌍 中英文支持，自动检测系统语言
 - 🎨 暗色模式支持
 - 📦 模块化重构
 - 🐛 修复已知问题
+- 🚀 独立版.app构建，包含所有依赖
+- 🔍 智能查找dpkg-deb工具路径
 
 ## 许可证 / License
 

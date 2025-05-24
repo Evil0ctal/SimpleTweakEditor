@@ -41,20 +41,23 @@ SimpleTweakEditor/
 │   └── ...                     # 各种尺寸的图标
 │
 ├── 📂 build_scripts/            # 构建脚本
-│   ├── 🔧 build_release.py      # PyInstaller构建脚本
-│   ├── 🔧 build_release.sh      # 构建包装脚本
-│   ├── 🔧 build_macos_app.py   # macOS .app构建脚本
+│   ├── 🔧 build_macos_app.py   # macOS 标准版.app构建脚本
+│   ├── 🔧 build_macos_app_standalone.py # macOS 独立版.app构建脚本 (包含依赖)
 │   ├── 🔧 build_linux_appimage.sh  # Linux AppImage构建脚本
 │   ├── 🔧 prepare_release.sh    # 发布准备脚本
-│   └── 🔧 clean_project.sh      # 项目清理脚本
+│   └── 🔧 clean_all.sh          # 清理所有构建文件
 │
 └── 📂 releases/                 # 发布文件目录
     └── 📂 v1.0.0/              # 1.0.0版本发布文件
-        ├── 📦 SimpleTweakEditor.app/     # macOS应用包
-        ├── 📦 SimpleTweakEditor-1.0.0-macOS.dmg  # macOS安装包
-        ├── 📦 SimpleTweakEditor-1.0.0-Darwin.tar.gz  # macOS压缩包
-        ├── 📦 SimpleTweakEditor-1.0.0-source.tar.gz  # 源代码包
-        └── 📄 SHA256SUMS        # 文件校验和
+        ├── 📂 macOS/           # macOS版本
+        │   ├── 📦 SimpleTweakEditor.app/  # 独立版应用包 (包含依赖)
+        │   ├── 📦 SimpleTweakEditor-macOS.zip  # 压缩包
+        │   └── 📄 SHA256SUMS    # 文件校验和
+        ├── 📂 Linux/           # Linux版本 (待构建)
+        ├── 📂 Source/          # 源代码
+        │   ├── 📦 SimpleTweakEditor-1.0.0-source.tar.gz
+        │   └── 📄 SHA256SUMS
+        └── 📂 Docs/            # 文档
 ```
 
 ## 🚀 快速开始
@@ -73,29 +76,30 @@ python3 main.py
 # 一键构建所有版本
 ./prepare_release.sh
 
-# 或单独构建macOS应用
+# 构建macOS独立版应用 (推荐)
+python3 build_macos_app_standalone.py
+
+# 构建macOS标准版应用
 python3 build_macos_app.py
 
-# 清理构建文件
-./clean_project.sh
+# 清理所有构建文件
+./clean_all.sh
 ```
 
 ## 📦 发布文件说明
 
 ### macOS版本
 
-1. **SimpleTweakEditor.app** - 独立应用包
-   - 可直接双击运行
-   - 包含所有项目文件
-   - 需要用户安装Python和PyQt6
+1. **SimpleTweakEditor.app (独立版)** - 包含所有依赖
+   - 使用PyInstaller构建
+   - 文件大小约31MB
+   - 用户无需安装Python或PyQt6
+   - 仅需安装dpkg工具
 
-2. **SimpleTweakEditor-1.0.0-macOS.dmg** - DMG安装包
-   - 包含.app和说明文档
-   - 用户友好的安装方式
-
-3. **SimpleTweakEditor-1.0.0-Darwin.tar.gz** - 压缩包版本
-   - 包含PyInstaller打包的单文件可执行程序
-   - 已包含所有Python依赖
+2. **SimpleTweakEditor.app (标准版)** - 需要Python环境
+   - 直接使用Python脚本
+   - 文件大小较小
+   - 需要用户安装Python 3.8+和PyQt6
 
 ### 跨平台版本
 
@@ -121,9 +125,9 @@ python3 build_macos_app.py
 ## ⚠️ 注意事项
 
 1. **依赖要求**：
-   - Python 3.8+
-   - PyQt6
-   - dpkg-deb（用于.deb文件操作）
+   - Python 3.8+ (标准版需要，独立版已内置)
+   - PyQt6 (标准版需要，独立版已内置)
+   - dpkg-deb (所有版本都需要)
 
 2. **平台支持**：
    - ✅ macOS 10.13+
@@ -134,3 +138,8 @@ python3 build_macos_app.py
    - 文件大小限制500MB
    - 路径验证防止遍历攻击
    - 安全的文件权限设置
+
+4. **新特性**：
+   - 🌍 多语言支持 (中英文自动检测)
+   - 🔍 智能查找dpkg-deb工具
+   - 📦 独立版构建支持
