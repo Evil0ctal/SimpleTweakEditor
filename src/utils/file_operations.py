@@ -8,8 +8,64 @@ import os
 import shutil
 import subprocess
 from datetime import datetime
+import platform
 
 from .system_utils import set_debian_permissions, get_package_info_from_control, suggest_output_filename
+
+
+def find_dpkg_deb():
+    """
+    查找dpkg-deb命令的路径
+    
+    Returns:
+        str: dpkg-deb的完整路径，如果找不到则返回None
+    """
+    # 可能的dpkg-deb路径
+    possible_paths = [
+        "dpkg-deb",  # 系统PATH中
+        "/usr/bin/dpkg-deb",
+        "/usr/local/bin/dpkg-deb",
+        "/opt/homebrew/bin/dpkg-deb",  # Homebrew on Apple Silicon
+        "/usr/local/opt/dpkg/bin/dpkg-deb",  # Homebrew on Intel
+    ]
+    
+    # 在Windows上可能的路径
+    if platform.system() == "Windows":
+        possible_paths.extend([
+            r"C:\Program Files\dpkg\bin\dpkg-deb.exe",
+            r"C:\dpkg\bin\dpkg-deb.exe",
+        ])
+    
+    # 检查每个可能的路径
+    for path in possible_paths:
+        try:
+            # 尝试运行dpkg-deb --version
+            result = subprocess.run([path, "--version"], 
+                                  capture_output=True, 
+                                  text=True, 
+                                  timeout=5)
+            if result.returncode == 0:
+                return path
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+            continue
+    
+    # 最后尝试使用which/where命令
+    try:
+        if platform.system() == "Windows":
+            result = subprocess.run(["where", "dpkg-deb"], 
+                                  capture_output=True, 
+                                  text=True)
+        else:
+            result = subprocess.run(["which", "dpkg-deb"], 
+                                  capture_output=True, 
+                                  text=True)
+        
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip().split('\n')[0]
+    except:
+        pass
+    
+    return None
 
 
 def unpack_deb_file(deb_path, output_dir):
@@ -47,9 +103,14 @@ def unpack_deb_file(deb_path, output_dir):
         # 创建目标目录
         os.makedirs(target_dir, exist_ok=True)
 
+        # 查找dpkg-deb
+        dpkg_deb = find_dpkg_deb()
+        if not dpkg_deb:
+            return False, "'dpkg-deb' tool not installed or not in PATH.\nPlease install dpkg to use this feature.\nOn macOS: brew install dpkg\nOn Linux: sudo apt-get install dpkg", None
+        
         # 提取文件系统内容
         result1 = subprocess.run(
-            ["dpkg-deb", "-x", deb_path, target_dir],
+            [dpkg_deb, "-x", deb_path, target_dir],
             capture_output=True, text=True
         )
 
@@ -57,7 +118,7 @@ def unpack_deb_file(deb_path, output_dir):
         debian_dir = os.path.join(target_dir, "DEBIAN")
         os.makedirs(debian_dir, exist_ok=True)
         result2 = subprocess.run(
-            ["dpkg-deb", "-e", deb_path, debian_dir],
+            [dpkg_deb, "-e", deb_path, debian_dir],
             capture_output=True, text=True
         )
 
@@ -127,11 +188,19 @@ def pack_folder_to_deb(folder_path, output_path):
             temp_structure_file = structure_file + ".tmp"
             shutil.move(structure_file, temp_structure_file)
 
+        # 查找dpkg-deb
+        dpkg_deb = find_dpkg_deb()
+        if not dpkg_deb:
+            # 恢复文件（如果需要）
+            if temp_structure_file and os.path.exists(temp_structure_file):
+                shutil.move(temp_structure_file, structure_file)
+            return False, "'dpkg-deb' tool not installed or not in PATH.\nPlease install dpkg to use this feature.\nOn macOS: brew install dpkg\nOn Linux: sudo apt-get install dpkg"
+        
         # 设置DEBIAN目录权限
         permissions_set, permission_errors = set_debian_permissions(debian_dir)
 
         # 构建dpkg-deb命令
-        build_cmd = ["dpkg-deb", "--root-owner-group", "-b", folder_path, output_path]
+        build_cmd = [dpkg_deb, "--root-owner-group", "-b", folder_path, output_path]
 
         # 执行打包命令
         result = subprocess.run(build_cmd, capture_output=True, text=True)

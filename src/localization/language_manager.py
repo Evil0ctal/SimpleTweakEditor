@@ -80,11 +80,16 @@ class LanguageManager:
     def get_command_presets(self, target_path=None):
         """获取快捷命令预设（本地化版本）"""
         import os
+        from src.utils.file_operations import find_dpkg_deb
+        
+        # 查找dpkg-deb的完整路径
+        dpkg_deb = find_dpkg_deb()
+        dpkg_cmd = dpkg_deb.replace('-deb', '') if dpkg_deb and '-deb' in dpkg_deb else "dpkg"
         
         # 通用命令（不需要目标）
         general_commands = [
             self.get_text("cmd_preset_title"),
-            ("dpkg -l", self.get_text("cmd_list_packages")),
+            (f"{dpkg_cmd} -l", self.get_text("cmd_list_packages")),
             ("find . -name '*.deb'", self.get_text("cmd_find_deb_files")),
         ]
         
@@ -108,13 +113,21 @@ class LanguageManager:
     def _get_deb_commands(self, deb_path):
         """获取.deb文件相关命令"""
         import shlex
+        from src.utils.file_operations import find_dpkg_deb
+        
         quoted_path = shlex.quote(deb_path)
+        
+        # 查找dpkg-deb的完整路径
+        dpkg_deb = find_dpkg_deb()
+        if not dpkg_deb:
+            dpkg_deb = "dpkg-deb"  # 如果找不到，仍然使用默认名称
+        
         return [
             "--- .deb File Commands ---",
-            (f"dpkg-deb --info {quoted_path}", self.get_text("cmd_view_deb_info")),
-            (f"dpkg-deb --contents {quoted_path}", self.get_text("cmd_list_deb_contents")),
+            (f"{dpkg_deb} --info {quoted_path}", self.get_text("cmd_view_deb_info")),
+            (f"{dpkg_deb} --contents {quoted_path}", self.get_text("cmd_list_deb_contents")),
             (f"ar t {quoted_path}", self.get_text("cmd_check_deb_structure")),
-            (f"dpkg-deb --control {quoted_path} /tmp/control_extract", self.get_text("cmd_extract_deb_control")),
+            (f"{dpkg_deb} --control {quoted_path} /tmp/control_extract", self.get_text("cmd_extract_deb_control")),
             (f"ar x {quoted_path} data.tar.xz", self.get_text("cmd_extract_deb_data")),
             (f"ls -lh {quoted_path}", "View file details"),
         ]
@@ -159,4 +172,3 @@ class LanguageManager:
             ])
         
         return commands
-

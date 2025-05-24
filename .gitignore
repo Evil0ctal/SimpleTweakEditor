@@ -16,15 +16,24 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
 
 # Virtual Environment
 venv/
 ENV/
 env/
 .venv/
+.env
+env.bak/
+venv.bak/
 
 # IDE
 .vscode/
@@ -32,23 +41,86 @@ env/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
+.ropeproject/
+
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
 
 # Project specific
 config.json
 *.deb
 unpacked/
 output/
+extracted_*/
+repacked_*/
+
+# Build artifacts
+/build/
+/dist/
+releases/
+!releases/.gitkeep
 
 # Logs
 *.log
+logs/
+*.log.*
 
 # Testing
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+.tox/
+.nox/
+.hypothesis/
+*.cover
+.cache
+nosetests.xml
+coverage.xml
+*.py,cover
+
+# Documentation
+docs/_build/
+site/
 
 # Security
 *.key
 *.pem
 *.crt
+*.p12
+*.pfx
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+.*.swp
+.*.swo
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Package files
+*.tar.gz
+*.zip
+*.7z
+*.dmg
+*.iso
+*.jar
+*.rar
+*.tar
+*.bz2
+*.xz
+
+# But keep these
+!icons/*.png
+!icons/*.icns
+!icons/*.ico

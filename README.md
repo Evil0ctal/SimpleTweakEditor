@@ -55,9 +55,16 @@ brew install dpkg
 sudo apt-get install dpkg
 ```
 
-## 使用方法 / Usage
+## 下载和使用 / Download and Usage
 
-### GUI模式 / GUI Mode
+### 🚀 快速开始 / Quick Start
+
+#### 下载预构建版本 / Download Pre-built Releases
+- **macOS**: 下载 `SimpleTweakEditor.app` 或 `.dmg` 安装包
+- **Linux**: 下载对应的可执行文件
+- 从 [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases) 页面下载
+
+#### 从源代码运行 / Run from Source
 ```bash
 python main.py
 ```
@@ -81,6 +88,46 @@ python main.py --lang zh  # 中文
 python main.py --lang en  # English
 ```
 
+## 构建应用 / Building the Application
+
+### 🔨 构建 macOS .app / Build macOS .app
+
+```bash
+# 进入构建脚本目录 / Enter build scripts directory
+cd build_scripts
+
+# 构建 macOS 应用包 / Build macOS app bundle
+python3 build_macos_app.py
+
+# 应用将生成在 / App will be created at:
+# dist/SimpleTweakEditor.app
+```
+
+### 🐧 构建 Linux 版本 / Build for Linux
+
+```bash
+# 创建 AppImage 结构 / Create AppImage structure
+./build_scripts/build_linux_appimage.sh
+
+# 使用 PyInstaller 构建单文件版本 / Build single file with PyInstaller
+python3 build_scripts/build_release.py
+```
+
+### 📦 一键构建所有版本 / Build All Versions
+
+```bash
+# 自动构建所有平台版本 / Auto build for all platforms
+./build_scripts/prepare_release.sh
+
+# 构建产物将整理在 / Builds will be organized in:
+# releases/v1.0.0/
+#   ├── macOS/
+#   │   ├── SimpleTweakEditor.app
+#   │   └── SimpleTweakEditor-1.0.0-macOS.dmg
+#   └── Linux/
+#       └── SimpleTweakEditor-1.0.0-Linux
+```
+
 ## 项目结构 / Project Structure
 
 ```
@@ -89,9 +136,10 @@ SimpleTweakEditor/
 ├── requirements.txt           # 依赖列表 / Dependencies
 ├── README.md                 # 本文件 / This file
 ├── LICENSE                   # 许可证 / License
-├── project_structure.md      # 详细架构文档 / Architecture docs
+├── PROJECT_STRUCTURE.md      # 详细架构文档 / Architecture docs
+├── QUICK_START.md           # 快速开始指南 / Quick start guide
 │
-└── src/                      # 源代码 / Source code
+├── src/                      # 源代码 / Source code
     ├── core/                 # 核心模块 / Core modules
     │   ├── app.py           # 主应用逻辑 / Main app logic
     │   ├── config.py        # 配置管理 / Config management
@@ -113,6 +161,15 @@ SimpleTweakEditor/
     └── localization/        # 多语言 / Localization
         ├── language_manager.py # 语言管理 / Language manager
         └── translations.py  # 翻译数据 / Translation data
+│
+├── build_scripts/            # 构建脚本 / Build scripts
+│   ├── build_release.py     # PyInstaller 构建脚本
+│   ├── build_macos_app.py   # macOS .app 构建脚本
+│   ├── build_linux_appimage.sh # Linux AppImage 脚本
+│   └── prepare_release.sh   # 发布准备脚本
+│
+└── releases/                # 发布文件 / Release files
+    └── v1.0.0/             # 版本发布目录
 ```
 
 ## 开发指南 / Development Guide
