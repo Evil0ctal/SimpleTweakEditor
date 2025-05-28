@@ -23,7 +23,11 @@ def create_standalone_app():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(script_dir)
     app_name = "SimpleTweakEditor"
-    version = "1.0.0"
+    
+    # 从src/version.py获取版本号
+    sys.path.insert(0, os.path.join(project_root, 'src'))
+    from version import APP_VERSION
+    version = APP_VERSION
     
     # 首先使用PyInstaller构建独立可执行文件
     print("🔨 Building standalone executable with PyInstaller...")

@@ -4,7 +4,8 @@
 
 set -e
 
-VERSION="1.0.0"
+# 从Python脚本获取版本号
+VERSION=$(python3 "$(dirname "$0")/get_version.py")
 PROJECT_ROOT="$(dirname "$(dirname "$(readlink -f "$0" || realpath "$0")")")"
 RELEASE_DIR="$PROJECT_ROOT/releases/v$VERSION"
 

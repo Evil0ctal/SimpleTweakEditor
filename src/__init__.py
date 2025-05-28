@@ -5,6 +5,8 @@ SimpleTweakEditor Source Package
 Professional iOS .deb package editor.
 """
 
-__version__ = "1.0.0"
+from .version import APP_VERSION
+
+__version__ = APP_VERSION
 __author__ = "Evil0ctal"
 __license__ = "Apache 2.0"

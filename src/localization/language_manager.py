@@ -6,6 +6,7 @@
 
 import locale
 from .translations import Translations
+from ..version import APP_VERSION
 
 
 class LanguageManager:
@@ -58,11 +59,19 @@ class LanguageManager:
         if self.current_language == "zh":
             # 中文
             if key in Translations.ZH:
-                return Translations.ZH[key]
+                text = Translations.ZH[key]
+                # 如果文本包含版本占位符，替换为实际版本
+                if "{version}" in text:
+                    text = text.format(version=APP_VERSION)
+                return text
 
         # 默认英文或找不到翻译时使用英文
         if key in Translations.EN:
-            return Translations.EN[key]
+            text = Translations.EN[key]
+            # 如果文本包含版本占位符，替换为实际版本
+            if "{version}" in text:
+                text = text.format(version=APP_VERSION)
+            return text
 
         # 如果翻译缺失，返回键名
         return key

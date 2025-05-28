@@ -24,8 +24,14 @@ class ImprovedAboutDialog(QDialog):
         self.setup_ui()
         
     def detect_dark_mode(self):
-        """检测是否为暗色模式 - qt-material会处理这个"""
-        # qt-material会自动处理主题，这里只是为了HTML内容
+        """检测是否为暗色模式"""
+        # 检查是否有主窗口，从主窗口获取主题信息
+        if hasattr(self.parent(), 'current_theme'):
+            current_theme = self.parent().current_theme
+            if current_theme and current_theme != 'auto':
+                return current_theme.startswith('dark_')
+        
+        # 如果没有主题信息，使用调色板检测
         app: Optional[QApplication] = QApplication.instance()
         if app is None:
             return False
@@ -36,7 +42,7 @@ class ImprovedAboutDialog(QDialog):
     def setup_ui(self):
         """设置UI"""
         self.setWindowTitle(self.translator.get_text("about"))
-        self.setFixedSize(550, 450)
+        self.setFixedSize(600, 500)
         
         # 主布局
         layout = QVBoxLayout(self)
@@ -103,7 +109,7 @@ class ImprovedAboutDialog(QDialog):
         # 根据主题设置内容
         self.update_content()
         
-        # 应用最小化的样式
+        # 应用主题样式
         self.apply_theme()
         
         layout.addWidget(self.info_browser)
@@ -113,16 +119,16 @@ class ImprovedAboutDialog(QDialog):
         # 检测当前主题
         self.is_dark_mode = self.detect_dark_mode()
         
-        # 使用更通用的颜色，让qt-material处理大部分样式
+        # 根据主题设置HTML内容的颜色
         if self.is_dark_mode:
             bg_color = "transparent"
-            text_color = "inherit"
+            text_color = "#e0e0e0"
             link_color = "#4dabf7"
             heading_color = "#74c0fc"
-            secondary_color = "#999"
+            secondary_color = "#999999"
         else:
             bg_color = "transparent"
-            text_color = "inherit"
+            text_color = "#333333"
             link_color = "#1976d2"
             heading_color = "#1565c0"
             secondary_color = "#666666"
@@ -143,9 +149,10 @@ class ImprovedAboutDialog(QDialog):
                 }}
                 h3 {{
                     color: {heading_color};
-                    margin-top: 15px;
-                    margin-bottom: 10px;
-                    font-size: 16px;
+                    margin-top: 12px;
+                    margin-bottom: 8px;
+                    font-size: 15px;
+                    font-weight: 600;
                 }}
                 a {{
                     color: {link_color};
@@ -155,17 +162,27 @@ class ImprovedAboutDialog(QDialog):
                     text-decoration: underline;
                 }}
                 ul {{
-                    margin: 10px 0;
-                    padding-left: 25px;
+                    margin: 8px 0;
+                    padding-left: 20px;
+                    list-style-type: none;
                 }}
                 li {{
-                    margin: 5px 0;
+                    margin: 4px 0;
+                    padding-left: 20px;
+                    position: relative;
+                }}
+                li:before {{
+                    content: "▸";
+                    position: absolute;
+                    left: 0;
+                    color: {link_color};
                 }}
                 .section {{
-                    margin-bottom: 15px;
+                    margin-bottom: 12px;
                 }}
                 .secondary {{
                     color: {secondary_color};
+                    font-size: 13px;
                 }}
             </style>
         </head>
@@ -181,28 +198,24 @@ class ImprovedAboutDialog(QDialog):
                     <li>{self.translator.get_text("feature_2").replace("2. ", "")}</li>
                     <li>{self.translator.get_text("feature_3").replace("3. ", "")}</li>
                     <li>{self.translator.get_text("feature_4").replace("4. ", "")}</li>
+                    <li>{self.translator.get_text("feature_5").replace("5. ", "")}</li>
+                    <li>{self.translator.get_text("feature_6").replace("6. ", "")}</li>
                 </ul>
             </div>
             
             <div class="section">
-                <h3>{self.translator.get_text("copyright_title").replace("=", "").strip()}</h3>
+                <h3>{"项目信息" if self.translator.get_current_language() == "zh" else "Project Info"}</h3>
                 <p class="secondary">{self.translator.get_text("copyright_text")}</p>
+                <p class="secondary">{self.translator.get_text("license")}</p>
                 <p>
                     <a href="https://github.com/Evil0ctal/SimpleTweakEditor">
-                        {self.translator.get_text("project_url")}
-                    </a>
-                </p>
-                <p class="secondary">{self.translator.get_text("license")}</p>
-            </div>
-            
-            <div class="section">
-                <h3>{"联系方式" if self.translator.get_current_language() == "zh" else "Contact"}</h3>
-                <p>
-                    <a href="https://github.com/Evil0ctal/SimpleTweakEditor/issues">
-                        {"报告问题" if self.translator.get_current_language() == "zh" else "Report Issues"}
+                        GitHub
                     </a> | 
-                    <a href="https://github.com/Evil0ctal">
-                        {"作者主页" if self.translator.get_current_language() == "zh" else "Author's Profile"}
+                    <a href="https://github.com/Evil0ctal/SimpleTweakEditor/issues">
+                        {"问题反馈" if self.translator.get_current_language() == "zh" else "Issues"}
+                    </a> | 
+                    <a href="https://github.com/Evil0ctal/SimpleTweakEditor/releases">
+                        {"下载" if self.translator.get_current_language() == "zh" else "Releases"}
                     </a>
                 </p>
             </div>
@@ -239,30 +252,60 @@ class ImprovedAboutDialog(QDialog):
         self.translator = translator
         # 重建UI以更新所有文本
         self.setup_ui()
+    
+    def showEvent(self, event):
+        """显示事件，确保主题正确应用"""
+        super().showEvent(event)
+        # 刷新内容和主题
+        self.update_content()
+        self.apply_theme()
         
     def apply_theme(self):
         """应用主题样式"""
-        # qt-material会处理大部分样式
-        # 只设置最少的必要样式
-        self.info_browser.setStyleSheet("""
-            QTextBrowser {
-                border: none;
-            }
+        # 获取当前主题的颜色
+        is_dark = self.detect_dark_mode()
+        
+        # 为QTextBrowser设置合适的背景色
+        if is_dark:
+            # 深色主题：使用稍微亮一点的背景
+            browser_bg = "#2e2e2e"
+            border_color = "#404040"
+        else:
+            # 浅色主题：使用稍微暗一点的背景
+            browser_bg = "#f5f5f5"
+            border_color = "#e0e0e0"
+        
+        self.info_browser.setStyleSheet(f"""
+            QTextBrowser {{
+                border: 1px solid {border_color};
+                border-radius: 4px;
+                background-color: {browser_bg};
+                padding: 5px;
+            }}
         """)
         
-        # 版本标签使用secondary类
-        self.version_label.setProperty("class", "secondary")
+        # 版本标签使用次要颜色
+        version_color = "#999999" if is_dark else "#666666"
+        self.version_label.setStyleSheet(f"color: {version_color};")
         
         # 图标样式 - 只有在没有图标时才应用背景
         if self.icon_label.pixmap() is None:
-            self.icon_label.setStyleSheet("""
-                QLabel {
-                    background-color: palette(highlight);
+            # 使用主题色作为背景
+            if is_dark:
+                icon_bg = "#4dabf7"  # 蓝色
+                icon_color = "#ffffff"
+            else:
+                icon_bg = "#1976d2"  # 蓝色
+                icon_color = "#ffffff"
+                
+            self.icon_label.setStyleSheet(f"""
+                QLabel {{
+                    background-color: {icon_bg};
                     border-radius: 12px;
-                    color: palette(highlighted-text);
+                    color: {icon_color};
                     font-size: 24px;
                     font-weight: bold;
-                }
+                }}
             """)
         
     def open_github(self):

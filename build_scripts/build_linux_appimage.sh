@@ -5,7 +5,8 @@
 set -e
 
 APP_NAME="SimpleTweakEditor"
-VERSION="1.0.0"
+# 从Python脚本获取版本号
+VERSION=$(python3 "$(dirname "$0")/get_version.py")
 ARCH="x86_64"
 
 echo "🐧 Building $APP_NAME AppImage for Linux..."

@@ -31,6 +31,9 @@ class MainWindow(QMainWindow):
         self.lang_mgr = app_core.lang_mgr
         self.config_mgr = app_core.config_mgr
         self.style_mgr = StyleManager(self.config_mgr)
+        
+        # 保存当前主题供子窗口使用
+        self.current_theme = self.style_mgr.get_theme()
 
         # 当前运行的命令线程
         self.current_command_thread = None
@@ -478,6 +481,7 @@ class MainWindow(QMainWindow):
         
         # 获取当前主题
         current_theme = self.style_mgr.get_theme()
+        self.current_theme = current_theme  # 保存当前主题供子窗口使用
         
         # 获取所有可用主题
         all_themes = self.style_mgr.get_all_theme_names(lang_for_theme)
@@ -540,6 +544,7 @@ class MainWindow(QMainWindow):
         """切换主题"""
         # 设置并应用新主题
         self.style_mgr.set_theme(theme_code)
+        self.current_theme = theme_code  # 更新当前主题
         
         # qt-material会全局应用主题，所以不需要单独为每个组件设置
         # 只需要应用自定义样式补充
@@ -601,7 +606,8 @@ class MainWindow(QMainWindow):
         help_menu.addSeparator()
         
         # 版本信息
-        version_action = QAction("Version 1.0.0", self)
+        from ..version import APP_VERSION
+        version_action = QAction(f"Version {APP_VERSION}", self)
         version_action.setEnabled(False)
         help_menu.addAction(version_action)
         

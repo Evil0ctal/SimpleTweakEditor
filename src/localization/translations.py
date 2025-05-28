@@ -147,10 +147,12 @@ class Translations:
         "intro_title": "=== Software Introduction ===",
         "intro_text": "This is a tool for unpacking and repacking iOS .deb files, particularly useful for iOS jailbreak tweak developers and modifiers.",
         "features_title": "=== Main Features ===",
-        "feature_1": "1. Unpack .deb files: Extract .deb files into folders for easy viewing and modification",
-        "feature_2": "2. Repack folders: Repackage modified folders back into .deb files",
-        "feature_3": "3. Support for drag and drop: Simply drag and drop .deb files into the window to start unpacking",
-        "feature_4": "4. Command line support: Execute custom commands",
+        "feature_1": "1. Package Management: Built-in browser with repository support",
+        "feature_2": "2. Interactive Terminal: Real PTY-based terminal with multi-tab support",
+        "feature_3": "3. Smart Editor: Control file editor with syntax validation",
+        "feature_4": "4. Multi-theme Support: Dark/light modes with dynamic layout",
+        "feature_5": "5. Drag & Drop: Simple file operations with visual feedback",
+        "feature_6": "6. Security: Path validation and file size limits",
         "usage_title": "=== Usage Instructions ===",
         "usage_unpack_title": "Unpack .deb files:",
         "usage_unpack_1": "- Method 1: Click the \"Unpack .deb File\" button, select file and output directory",
@@ -165,9 +167,9 @@ class Translations:
         "ready_to_go": "Ready to go! Please begin operations...",
 
         # About dialog
-        "about_title": "iOS .deb Tweak Editor",
-        "about_version": "Version: 1.0.0",
-        "about_description": "A tool for unpacking and repacking iOS .deb files.",
+        "about_title": "SimpleTweakEditor",
+        "about_version": "Version: {version}",
+        "about_description": "Professional iOS .deb package editor with modern GUI and advanced features.",
         
         # Repository Manager
         "repo_manager": "Repository Manager",
@@ -453,10 +455,12 @@ class Translations:
         "intro_title": "=== 软件简介 ===",
         "intro_text": "这是一个用于解包和重新打包iOS .deb文件的工具，特别适合iOS越狱插件开发者和修改者。",
         "features_title": "=== 主要功能 ===",
-        "feature_1": "1. 解包.deb文件：将.deb文件解压缩到文件夹中，方便查看和修改",
-        "feature_2": "2. 重新打包文件夹：将修改后的文件夹重新打包为.deb文件",
-        "feature_3": "3. 支持文件拖放：直接拖放.deb文件到窗口即可开始解包",
-        "feature_4": "4. 支持命令行：可以执行自定义命令",
+        "feature_1": "1. 软件包管理：内置浏览器和仓库支持",
+        "feature_2": "2. 交互式终端：真正的PTY终端，支持多标签页",
+        "feature_3": "3. 智能编辑器：Control文件编辑器和语法验证",
+        "feature_4": "4. 多主题支持：暗色/亮色模式和动态布局",
+        "feature_5": "5. 拖放操作：简单的文件操作和视觉反馈",
+        "feature_6": "6. 安全保护：路径验证和文件大小限制",
         "usage_title": "=== 使用方法 ===",
         "usage_unpack_title": "解包.deb文件:",
         "usage_unpack_1": "- 方法1: 点击\"解包.deb文件\"按钮，选择文件和输出目录",
@@ -471,9 +475,9 @@ class Translations:
         "ready_to_go": "准备就绪！请开始操作...",
 
         # 关于对话框
-        "about_title": "iOS .deb Tweak编辑器",
-        "about_version": "版本: 1.0.0",
-        "about_description": "一个用于解包和重新打包iOS .deb文件的工具。",
+        "about_title": "SimpleTweakEditor",
+        "about_version": "版本: {version}",
+        "about_description": "专业iOS .deb软件包编辑器，具有现代GUI和高级功能。",
         
         # 软件源管理
         "repo_manager": "软件源管理",
