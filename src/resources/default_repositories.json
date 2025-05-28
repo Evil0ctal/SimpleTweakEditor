@@ -1,0 +1,54 @@
+{
+  "repositories": [
+    {
+      "name": "BigBoss",
+      "url": "http://apt.thebigboss.org/repofiles/cydia/",
+      "description": "The biggest repository of iOS tweaks and apps (17,000+ packages)"
+    },
+    {
+      "name": "Chariz",
+      "url": "https://repo.chariz.com/",
+      "description": "Premium tweaks and themes for jailbroken iOS devices"
+    },
+    {
+      "name": "Packix",
+      "url": "https://repo.packix.com/",
+      "description": "Modern repository with premium and free tweaks"
+    },
+    {
+      "name": "Havoc",
+      "url": "https://havoc.app/",
+      "description": "Repository for popular iOS tweaks (470+ packages)"
+    },
+    {
+      "name": "Twickd",
+      "url": "https://repo.twickd.com/",
+      "description": "Device customization platform with 500+ themes and tweaks"
+    },
+    {
+      "name": "Zebra",
+      "url": "https://getzbra.com/repo/",
+      "description": "Repository for Zebra package manager"
+    },
+    {
+      "name": "Evelyn's Collection",
+      "url": "https://evynw.github.io/",
+      "description": "Curated collection of useful iOS tweaks and utilities (580+ packages)"
+    },
+    {
+      "name": "PoomSmart's Repo",
+      "url": "https://poomsmart.github.io/repo/",
+      "description": "Technical tweaks and system modifications (200+ packages)"
+    },
+    {
+      "name": "Ryan Petrich's Repo",
+      "url": "https://rpetri.ch/repo/",
+      "description": "High-quality system tweaks and development tools"
+    },
+    {
+      "name": "Spark Dev",
+      "url": "https://sparkdev.me/",
+      "description": "Modern tweaks and enhancements for iOS devices"
+    }
+  ]
+}

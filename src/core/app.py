@@ -20,6 +20,7 @@ from src.utils.system_utils import (
 )
 from src.workers.command_thread import UnpackThread, PackThread
 from .config import ConfigManager
+from .repo_manager import RepoManager
 
 
 class TweakEditorApp:
@@ -29,6 +30,7 @@ class TweakEditorApp:
         # 初始化管理器
         self.config_mgr = ConfigManager()
         self.lang_mgr = LanguageManager()
+        self.repo_mgr = RepoManager(str(self.config_mgr.config_dir))
 
         # 设置语言
         config_lang = self.config_mgr.get_language()

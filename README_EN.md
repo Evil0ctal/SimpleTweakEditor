@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.0-blue?style=for-the-badge&logo=apple&logoColor=white)
+![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.1-blue?style=for-the-badge&logo=apple&logoColor=white)
 
 [![License](https://img.shields.io/github/license/Evil0ctal/SimpleTweakEditor?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -13,7 +13,7 @@
 
 **Professional iOS .deb Package Editor with Modern GUI**
 
-[中文文档](README.md) | [Quick Start](QUICK_START.md) | [Download](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
+[中文文档](README.md) | [Quick Start](docs/QUICK_START.md) | [Download](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 
 </div>
 
@@ -31,12 +31,16 @@
 - **Drag & Drop** - Simple drag and drop interface for quick operations
 - **Control File Editor** - Built-in editor with syntax validation
 - **Batch Processing** - Command-line support for automation
+- **Package Management** - Built-in package browser and repository management
+- **Interactive Terminal** - Real PTY-based terminal with multi-tab support
 
 ### 🌍 User Experience
 - **Multi-language** - English/Chinese with automatic system detection
-- **Dark Mode** - Automatic theme adaptation to system settings
-- **State Persistence** - Remembers window size and user preferences
+- **Multiple Themes** - Dark mode, light mode, and colorful themes
+- **Dynamic Layout** - Smart layout adaptation based on screen size
+- **Window Management** - Automatic window centering and state persistence
 - **Smart Detection** - Automatically finds dpkg-deb in multiple paths
+- **Cross-platform Fonts** - Improved font compatibility across different systems
 - **Intuitive UI** - Clean, modern interface with helpful tooltips
 
 ## 🚀 Installation
@@ -112,10 +116,13 @@ python3 build_macos_app_standalone.py
 
 ## 📚 Documentation
 
-- [Quick Start Guide](QUICK_START.md) - Get started in minutes
-- [Release Notes](RELEASE_NOTES.md) - What's new in each version
-- [Feature Roadmap](FEATURE_ROADMAP.md) - Planned features and improvements
-- [Project Structure](PROJECT_STRUCTURE.md) - Understanding the codebase
+- [Quick Start Guide](docs/QUICK_START.md) - Get started in minutes
+- [Release Notes](RELEASE_NOTES.md) - What's new in each version (Chinese)
+- [Release Notes (EN)](RELEASE_NOTES_EN.md) - English release notes
+- [Feature Roadmap](docs/FEATURE_ROADMAP.md) - Planned features and improvements
+- [Project Structure](docs/PROJECT_STRUCTURE.md) - Understanding the codebase
+- [Repository Manager Guide](docs/REPO_MANAGER_GUIDE.md) - Managing software repositories
+- [Theme Documentation](docs/THEMES.md) - Theme system and customization
 
 ## 🤝 Contributing
 
@@ -142,6 +149,29 @@ A: Right-click the app and select "Open" to bypass Gatekeeper on first launch.
 **Q: Missing PyQt6 error**  
 A: Install Python dependencies: `pip3 install PyQt6 Pillow`
 
+## 📝 Changelog
+
+### v1.0.1 (2025-05-28)
+- 🔧 **UI Layout Optimization** - Fixed interactive terminal component overlap and display issues
+- 🌍 **Language Switching Stability** - Resolved crashes when switching languages
+- 🎨 **Font Compatibility** - Improved cross-platform font handling, fixed macOS font warnings
+- 📐 **Dynamic Layout** - Enhanced window size adaptation and component auto-adjustment
+- 🖥️ **Terminal Improvements** - True PTY terminal support with multi-tab functionality
+- 📦 **Package Management** - Built-in package browser and repository management
+- 🎯 **Window Centering** - Automatic window positioning and state saving
+- 🗂️ **Documentation Cleanup** - Reorganized project documentation structure
+
+### v1.0.0 (2025-05-24)
+- ✨ First official release
+- 🔐 Enhanced security and path validation
+- 🌍 Multi-language support with automatic system language detection
+- 🎨 Multiple theme support (dark, light, colorful)
+- 📦 Modular refactoring for improved code quality
+- 🚀 Standalone .app build with all dependencies included
+- 🔍 Smart dpkg-deb tool path detection
+
+For detailed release notes, see [RELEASE_NOTES_EN.md](RELEASE_NOTES_EN.md)
+
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
@@ -161,6 +191,8 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ---
 
 <div align="center">
+
+**Note**: This tool is for legitimate iOS development and debugging purposes only. Please comply with relevant laws and regulations.
 
 Made with ❤️ by [Evil0ctal](https://github.com/Evil0ctal)
 

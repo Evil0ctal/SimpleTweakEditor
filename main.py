@@ -102,7 +102,8 @@ def main():
 
     # 创建Qt应用程序
     app = QApplication(sys.argv)
-    app.setStyle("Fusion")
+    # 不设置Fusion样式，让qt-material处理
+    # app.setStyle("Fusion")
     
     # 设置应用程序图标
     icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icons', 'app_icon.png')

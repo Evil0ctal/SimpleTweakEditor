@@ -20,6 +20,7 @@ class ConfigManager:
         # 默认配置
         self.default_config = {
             "language": "auto",  # auto, en, zh
+            "theme": "auto",  # auto, light, dark
             "debug_mode": False,  # 生产环境默认关闭
             "window": {
                 "width": 800,
@@ -42,11 +43,9 @@ class ConfigManager:
 
     def _get_config_dir(self):
         """获取配置目录"""
-        if os.name == 'nt':  # Windows
-            config_dir = Path(os.environ.get('APPDATA', '')) / self.app_name
-        else:  # macOS and Linux
-            config_dir = Path.home() / f'.{self.app_name.lower()}'
-
+        # 统一使用 Downloads/SimpleTweakEditor 作为配置目录
+        config_dir = Path.home() / "Downloads" / self.app_name
+        
         # 确保配置目录存在
         config_dir.mkdir(parents=True, exist_ok=True)
         return config_dir
@@ -182,3 +181,7 @@ class ConfigManager:
         """设置是否显示欢迎消息"""
         self.set("ui.show_welcome_message", show)
         self.save_config()
+    
+    def get_app_data_dir(self):
+        """获取应用数据目录（与配置目录相同）"""
+        return self.config_dir

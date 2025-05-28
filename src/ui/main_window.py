@@ -9,12 +9,16 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QAction, QTextCursor, QActionGroup
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTextEdit, QLineEdit, QGroupBox, QSplitter, QStatusBar, QComboBox, QFileDialog
+    QTextEdit, QLineEdit, QGroupBox, QSplitter, QStatusBar, QComboBox, QFileDialog,
+    QMessageBox, QTabWidget, QFrame
 )
 
 from .styles import StyleManager
 from .control_editor import ControlEditorDialog
+from .package_manager_widget import PackageManagerWidget
+from .repo_manager_dialog import RepoManagerDialog
 from src.workers.command_thread import CommandThread
+from src.ui.interactive_terminal import InteractiveTerminal
 from src.utils.system_utils import open_folder, is_valid_deb_file, is_valid_package_folder
 
 
@@ -26,18 +30,27 @@ class MainWindow(QMainWindow):
         self.app_core = app_core
         self.lang_mgr = app_core.lang_mgr
         self.config_mgr = app_core.config_mgr
-        self.style_mgr = StyleManager()
+        self.style_mgr = StyleManager(self.config_mgr)
 
         # 当前运行的命令线程
         self.current_command_thread = None
+        
+        # 窗口管理器 - 存储打开的对话框实例
+        self.dialogs = {
+            'package_manager': None,
+            'repo_manager': None
+        }
 
         # 初始化UI
         self.setupUI()
         self.setup_menu_bar()
         self.restore_window_state()
 
-        # 应用样式
-        self.apply_styles()
+        # 应用样式（延迟执行以确保所有组件都已创建）
+        QTimer.singleShot(0, self.apply_styles)
+        
+        # 延迟居中窗口以确保布局完成
+        QTimer.singleShot(50, self.center_window)
 
         # 延迟加载欢迎消息
         if self.config_mgr.get_show_welcome_message():
@@ -58,12 +71,93 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.setSpacing(10)
 
-        # 创建UI组件
-        self.create_info_section(main_layout)
-        self.create_button_section(main_layout)
-        self.create_drop_zone(main_layout)
-        self.create_main_content(main_layout)
+        # 创建选项卡界面
+        self.create_tabbed_interface(main_layout)
         self.create_status_bar()
+
+    def create_tabbed_interface(self, layout):
+        """创建选项卡界面"""
+        # 创建选项卡控件
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setTabPosition(QTabWidget.TabPosition.North)
+        
+        # 创建各个选项卡
+        self.create_deb_tools_tab()
+        self.create_package_manager_tab()
+        self.create_repo_manager_tab()
+        self.create_command_tools_tab()
+        
+        layout.addWidget(self.tab_widget)
+
+    def create_deb_tools_tab(self):
+        """创建deb工具选项卡（原始功能）"""
+        deb_widget = QWidget()
+        deb_layout = QVBoxLayout(deb_widget)
+        deb_layout.setContentsMargins(10, 10, 10, 10)
+        deb_layout.setSpacing(10)
+
+        # 创建原有的UI组件
+        self.create_info_section(deb_layout)
+        self.create_button_section(deb_layout)
+        self.create_drop_zone(deb_layout)
+        self.create_main_content(deb_layout)
+
+        # 添加选项卡
+        self.tab_widget.addTab(deb_widget, self.lang_mgr.get_text("deb_tools"))
+
+    def create_package_manager_tab(self):
+        """创建插件管理器选项卡"""
+        # 创建包装器容器
+        package_widget = QWidget()
+        package_layout = QVBoxLayout(package_widget)
+        package_layout.setContentsMargins(0, 0, 0, 0)
+        package_layout.setSpacing(0)
+        
+        # 创建插件管理器实例 - 传入必要的参数
+        self.package_manager = PackageManagerWidget(
+            parent=self, 
+            repo_manager=self.app_core.repo_mgr,
+            lang_mgr=self.lang_mgr
+        )
+        
+        # 隐藏对话框的标题栏和边框，让它看起来像嵌入式组件
+        self.package_manager.setWindowFlags(Qt.WindowType.Widget)
+        self.package_manager.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
+        
+        # 将插件管理器添加到布局中
+        package_layout.addWidget(self.package_manager)
+        
+        self.tab_widget.addTab(package_widget, self.lang_mgr.get_text("package_manager"))
+
+    def create_repo_manager_tab(self):
+        """创建软件源管理选项卡"""
+        # 创建包装器容器
+        repo_widget = QWidget()
+        repo_layout = QVBoxLayout(repo_widget)
+        repo_layout.setContentsMargins(0, 0, 0, 0)
+        repo_layout.setSpacing(0)
+        
+        # 创建软件源管理器实例
+        self.repo_manager_widget = RepoManagerDialog(
+            parent=self,
+            repo_manager=self.app_core.repo_mgr,
+            lang_mgr=self.lang_mgr
+        )
+        
+        # 隐藏对话框的标题栏和边框，让它看起来像嵌入式组件
+        self.repo_manager_widget.setWindowFlags(Qt.WindowType.Widget)
+        self.repo_manager_widget.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
+        
+        # 将软件源管理器添加到布局中
+        repo_layout.addWidget(self.repo_manager_widget)
+        
+        self.tab_widget.addTab(repo_widget, self.lang_mgr.get_text("manage_sources"))
+
+    def create_command_tools_tab(self):
+        """创建命令工具选项卡"""
+        # 使用新的交互式终端
+        self.terminal_widget = InteractiveTerminal(self.lang_mgr)
+        self.tab_widget.addTab(self.terminal_widget, self.lang_mgr.get_text("command_tools"))
 
     def create_info_section(self, layout):
         """创建信息区域"""
@@ -96,70 +190,108 @@ class MainWindow(QMainWindow):
         self.drop_group = QGroupBox(self.lang_mgr.get_text("drop_zone"))
         drop_layout = QVBoxLayout(self.drop_group)
 
-        self.drop_label = QLabel(self.lang_mgr.get_text("drop_zone"))
+        # Create drop zone hint text
+        self.drop_label = QLabel(self.lang_mgr.get_text("drop_zone_hint"))
         self.drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.drop_label.setMinimumHeight(100)
+        # Set appropriate font size
+        font = self.drop_label.font()
+        font.setPointSize(14)
+        self.drop_label.setFont(font)
+        # Add some styling
+        self.drop_label.setStyleSheet("""
+            QLabel {
+                color: palette(text);
+                padding: 20px;
+                line-height: 1.5;
+            }
+        """)
         self.drop_label.setProperty("dropZone", True)
         drop_layout.addWidget(self.drop_label)
 
         layout.addWidget(self.drop_group)
 
     def create_main_content(self, layout):
-        """创建主要内容区域"""
-        splitter = QSplitter(Qt.Orientation.Vertical)
+        """创建主要内容区域（仅日志区域）"""
+        # 创建日志区域作为容器
+        log_container = QWidget()
+        log_layout = QVBoxLayout(log_container)
+        log_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # 添加日志区域
+        self.create_log_section(log_layout)
+        
+        layout.addWidget(log_container)
 
-        # 日志区域
-        self.create_log_section(splitter)
-
-        # 命令行区域
-        self.create_command_section(splitter)
-
-        # 设置分隔器大小
-        sizes = self.config_mgr.get_splitter_sizes()
-        splitter.setSizes(sizes)
-
-        # 保存分隔器状态
-        splitter.splitterMoved.connect(
-            lambda pos, index: self.config_mgr.set_splitter_sizes(splitter.sizes())
-        )
-
-        layout.addWidget(splitter)
-
-    def create_log_section(self, parent):
+    def create_log_section(self, layout):
         """创建日志区域"""
-        self.log_group = QGroupBox(self.lang_mgr.get_text("operation_log"))
-        log_layout = QVBoxLayout(self.log_group)
-
-        # 日志工具栏
-        log_toolbar = QHBoxLayout()
-        log_toolbar.addStretch()
-
+        # 创建标题栏
+        title_layout = QHBoxLayout()
+        title_layout.setContentsMargins(0, 0, 0, 5)
+        
+        # 日志标题
+        self.log_title = QLabel(self.lang_mgr.get_text("operation_log"))
+        title_layout.addWidget(self.log_title)
+        
+        title_layout.addStretch()
+        
+        # 清除日志按钮 - 使用更小的按钮
         self.clear_log_btn = QPushButton(self.lang_mgr.get_text("clear_log"))
+        self.clear_log_btn.setMaximumHeight(30)
+        self.clear_log_btn.setMinimumHeight(30)
         self.clear_log_btn.clicked.connect(self.clear_log)
-        log_toolbar.addWidget(self.clear_log_btn)
-
-        log_layout.addLayout(log_toolbar)
-
+        title_layout.addWidget(self.clear_log_btn)
+        
+        layout.addLayout(title_layout)
+        
         # 日志文本区域
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
         self.log_text.document().setMaximumBlockCount(1000)
-        log_layout.addWidget(self.log_text)
+        layout.addWidget(self.log_text)
 
-        parent.addWidget(self.log_group)
+    def create_command_log_section(self, layout):
+        """创建命令工具独立的日志区域"""
+        # 创建标题栏
+        title_layout = QHBoxLayout()
+        title_layout.setContentsMargins(0, 0, 0, 5)
+        
+        # 命令日志标题
+        self.cmd_log_title = QLabel(self.lang_mgr.get_text("command_output"))
+        title_layout.addWidget(self.cmd_log_title)
+        
+        title_layout.addStretch()
+        
+        # 清除命令日志按钮
+        self.clear_cmd_log_btn = QPushButton(self.lang_mgr.get_text("clear_log"))
+        self.clear_cmd_log_btn.setMaximumHeight(30)
+        self.clear_cmd_log_btn.setMinimumHeight(30)
+        self.clear_cmd_log_btn.clicked.connect(self.clear_command_log)
+        title_layout.addWidget(self.clear_cmd_log_btn)
+        
+        layout.addLayout(title_layout)
+        
+        # 命令日志文本区域
+        self.cmd_log_text = QTextEdit()
+        self.cmd_log_text.setReadOnly(True)
+        self.cmd_log_text.document().setMaximumBlockCount(2000)
+        # 设置等宽字体，适合显示命令输出
+        font = self.cmd_log_text.font()
+        font.setFamily("Monaco, Menlo, 'DejaVu Sans Mono', monospace")
+        self.cmd_log_text.setFont(font)
+        layout.addWidget(self.cmd_log_text)
 
-    def create_command_section(self, parent):
+    def create_command_section(self, layout):
         """创建命令行区域"""
-        self.cmd_group = QGroupBox(self.lang_mgr.get_text("command_line"))
-        cmd_layout = QVBoxLayout(self.cmd_group)
+        # 创建标题
+        self.cmd_title = QLabel(self.lang_mgr.get_text("command_line"))
+        layout.addWidget(self.cmd_title)
 
         # 快捷命令工具栏
-        self.create_command_toolbar(cmd_layout)
+        self.create_command_toolbar(layout)
 
         # 命令输入区域
-        self.create_command_input(cmd_layout)
-
-        parent.addWidget(self.cmd_group)
+        self.create_command_input(layout)
 
     def create_command_toolbar(self, layout):
         """创建命令工具栏"""
@@ -168,14 +300,14 @@ class MainWindow(QMainWindow):
         
         # 目标选择按钮
         self.select_target_btn = QPushButton(self.lang_mgr.get_text("select_target_file"))
-        # self.select_target_btn.setMaximumWidth(120)
         self.select_target_btn.clicked.connect(self.select_target)
         target_toolbar.addWidget(self.select_target_btn)
         
         # 当前选择的目标显示
         target_text = self.lang_mgr.get_text("no_target_selected") or "No target selected"
         self.target_label = QLabel(target_text)
-        self.target_label.setStyleSheet("color: gray; font-style: italic; padding: 4px; border: 1px solid #ddd; border-radius: 3px;")
+        # 让qt-material处理样式
+        self.target_label.setProperty("class", "info-label")
         self.target_label.setMinimumHeight(25)
         self.target_label.setWordWrap(False)  # 防止换行
         self.target_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
@@ -188,21 +320,6 @@ class MainWindow(QMainWindow):
         clear_tooltip = self.lang_mgr.get_text("clear_target_selection") or "Clear target selection"
         self.clear_target_btn.setToolTip(clear_tooltip)
         self.clear_target_btn.clicked.connect(self.clear_target)
-        self.clear_target_btn.setStyleSheet("""
-            QPushButton { 
-                font-weight: bold; 
-                color: #d32f2f;
-                border: 1px solid #d32f2f;
-                border-radius: 4px;
-                padding: 4px 8px;
-            }
-            QPushButton:hover {
-                background-color: #ffebee;
-            }
-            QPushButton:pressed {
-                background-color: #ffcdd2;
-            }
-        """)
         target_toolbar.addWidget(self.clear_target_btn)
         
         layout.addLayout(target_toolbar)
@@ -221,6 +338,7 @@ class MainWindow(QMainWindow):
         # 清除命令输入框按钮
         self.clear_cmd_btn = QPushButton(self.lang_mgr.get_text("clear"))
         self.clear_cmd_btn.setMaximumWidth(80)
+        self.clear_cmd_btn.setMinimumHeight(30)
         self.clear_cmd_btn.setToolTip(self.lang_mgr.get_text("clear_command"))
         self.clear_cmd_btn.clicked.connect(self.clear_command)
         cmd_toolbar.addWidget(self.clear_cmd_btn)
@@ -241,6 +359,7 @@ class MainWindow(QMainWindow):
         self.cmd_entry = QLineEdit()
         self.cmd_entry.setPlaceholderText(self.lang_mgr.get_text("cmd_placeholder"))
         self.cmd_entry.returnPressed.connect(self.execute_command)
+        # 设置输入框样式
         cmd_input_layout.addWidget(self.cmd_entry)
 
         self.cmd_btn = QPushButton(self.lang_mgr.get_text("execute"))
@@ -288,6 +407,18 @@ class MainWindow(QMainWindow):
         file_menu.addAction(repack_action)
 
         file_menu.addSeparator()
+        
+        # 插件管理器（主要功能）
+        package_manager_action = QAction(self.lang_mgr.get_text("package_manager"), self)
+        package_manager_action.triggered.connect(self.open_package_manager)
+        file_menu.addAction(package_manager_action)
+        
+        # 管理软件源（源管理）
+        manage_sources_action = QAction(self.lang_mgr.get_text("manage_sources"), self)
+        manage_sources_action.triggered.connect(self.open_repo_manager)
+        file_menu.addAction(manage_sources_action)
+
+        file_menu.addSeparator()
 
         # 退出选项
         exit_action = QAction(self.lang_mgr.get_text("exit"), self)
@@ -307,6 +438,9 @@ class MainWindow(QMainWindow):
 
         # 语言切换子菜单
         self.create_language_menu(settings_menu)
+        
+        # 主题切换子菜单
+        self.create_theme_menu(settings_menu)
 
     def create_language_menu(self, parent_menu):
         """创建语言菜单"""
@@ -329,6 +463,93 @@ class MainWindow(QMainWindow):
 
             self.lang_group.addAction(action)
             language_menu.addAction(action)
+
+    def create_theme_menu(self, parent_menu):
+        """创建主题菜单"""
+        theme_menu = parent_menu.addMenu(self.lang_mgr.get_text("theme"))
+
+        # 创建主题动作组
+        self.theme_group = QActionGroup(self)
+        self.theme_group.setExclusive(True)
+
+        # 获取当前语言
+        current_lang = self.lang_mgr.get_current_language()
+        lang_for_theme = "zh" if current_lang == "zh" else "en"
+        
+        # 获取当前主题
+        current_theme = self.style_mgr.get_theme()
+        
+        # 获取所有可用主题
+        all_themes = self.style_mgr.get_all_theme_names(lang_for_theme)
+        
+        # 添加自动选项
+        auto_action = QAction(self.lang_mgr.get_text("follow_system"), self)
+        auto_action.setCheckable(True)
+        auto_action.setChecked(current_theme == "auto")
+        auto_action.setData("auto")
+        auto_action.triggered.connect(lambda checked: self.change_theme("auto"))
+        self.theme_group.addAction(auto_action)
+        theme_menu.addAction(auto_action)
+        
+        theme_menu.addSeparator()
+        
+        # 按深色/浅色分组
+        dark_themes = []
+        light_themes = []
+        
+        for theme_code, theme_name in all_themes:
+            if theme_code == "auto":
+                continue
+            if theme_code.startswith("dark_"):
+                dark_themes.append((theme_code, theme_name))
+            else:
+                light_themes.append((theme_code, theme_name))
+        
+        # 添加深色主题
+        if dark_themes:
+            dark_label = QAction("--- " + (self.lang_mgr.get_text("dark_theme") or "Dark Themes") + " ---", self)
+            dark_label.setEnabled(False)
+            theme_menu.addAction(dark_label)
+            
+            for theme_code, theme_name in sorted(dark_themes, key=lambda x: x[1]):
+                action = QAction(theme_name, self)
+                action.setCheckable(True)
+                action.setChecked(current_theme == theme_code)
+                action.setData(theme_code)
+                action.triggered.connect(lambda checked, code=theme_code: self.change_theme(code))
+                self.theme_group.addAction(action)
+                theme_menu.addAction(action)
+        
+        # 添加浅色主题
+        if light_themes:
+            theme_menu.addSeparator()
+            light_label = QAction("--- " + (self.lang_mgr.get_text("light_theme") or "Light Themes") + " ---", self)
+            light_label.setEnabled(False)
+            theme_menu.addAction(light_label)
+            
+            for theme_code, theme_name in sorted(light_themes, key=lambda x: x[1]):
+                action = QAction(theme_name, self)
+                action.setCheckable(True)
+                action.setChecked(current_theme == theme_code)
+                action.setData(theme_code)
+                action.triggered.connect(lambda checked, code=theme_code: self.change_theme(code))
+                self.theme_group.addAction(action)
+                theme_menu.addAction(action)
+
+    def change_theme(self, theme_code):
+        """切换主题"""
+        # 设置并应用新主题
+        self.style_mgr.set_theme(theme_code)
+        
+        # qt-material会全局应用主题，所以不需要单独为每个组件设置
+        # 只需要应用自定义样式补充
+        self.apply_styles()
+        
+        # 更新日志颜色
+        if hasattr(self, 'log_text'):
+            self.log_text.viewport().update()
+        if hasattr(self, 'cmd_log_text'):
+            self.cmd_log_text.viewport().update()
 
     def create_help_menu(self, menubar):
         """创建帮助菜单"""
@@ -395,6 +616,9 @@ class MainWindow(QMainWindow):
 
     def update_command_presets(self):
         """更新快捷命令预设"""
+        if not hasattr(self, 'cmd_presets'):
+            return
+            
         self.cmd_presets.clear()
         presets = self.lang_mgr.get_command_presets(self.current_target_path)
 
@@ -408,6 +632,9 @@ class MainWindow(QMainWindow):
 
     def load_command_preset(self, index):
         """加载预设命令"""
+        if not hasattr(self, 'cmd_presets') or not hasattr(self, 'cmd_entry'):
+            return
+            
         if index > 0:  # 跳过标题项
             command = self.cmd_presets.itemData(index)
             if command:
@@ -416,7 +643,8 @@ class MainWindow(QMainWindow):
 
     def clear_command(self):
         """清除命令输入"""
-        self.cmd_entry.clear()
+        if hasattr(self, 'cmd_entry'):
+            self.cmd_entry.clear()
     
     def select_target(self):
         """选择目标文件或文件夹"""
@@ -464,7 +692,10 @@ class MainWindow(QMainWindow):
         
         self.target_label.setText(display_name)
         self.target_label.setToolTip(f"Full path: {target_path}")
-        self.target_label.setStyleSheet("color: #1976d2; font-weight: bold; padding: 4px; border: 1px solid #1976d2; border-radius: 3px; background-color: #e3f2fd;")
+        # 让qt-material处理样式
+        self.target_label.setProperty("class", "success-label")
+        self.target_label.style().unpolish(self.target_label)
+        self.target_label.style().polish(self.target_label)
         
         # 更新快捷命令
         self.update_command_presets()
@@ -476,10 +707,23 @@ class MainWindow(QMainWindow):
         self.current_target_path = None
         target_text = self.lang_mgr.get_text("no_target_selected") or "No target selected"
         self.target_label.setText(target_text)
-        self.target_label.setStyleSheet("color: gray; font-style: italic; padding: 4px; border: 1px solid #ddd; border-radius: 3px;")
+        # 让qt-material处理样式
+        self.target_label.setProperty("class", "info-label")
+        self.target_label.style().unpolish(self.target_label)
+        self.target_label.style().polish(self.target_label)
         self.target_label.setToolTip("")
         self.update_command_presets()
 
+    def _update_target_label_style(self, has_target):
+        """更新目标标签样式（使用qt-material主题）"""
+        if has_target:
+            self.target_label.setProperty("class", "success-label")
+        else:
+            self.target_label.setProperty("class", "info-label")
+        # 强制更新样式
+        self.target_label.style().unpolish(self.target_label)
+        self.target_label.style().polish(self.target_label)
+    
     def browse_file_for_command(self):
         """浏览文件并添加到命令行"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -507,7 +751,8 @@ class MainWindow(QMainWindow):
         if self.handle_special_commands(command):
             return
 
-        self.log(f"{self.lang_mgr.get_text('execute')}: {command}", "info")
+        # 输出到命令工具日志
+        self.log_to_command(f"{self.lang_mgr.get_text('execute')}: {command}", "info")
 
         # 停止之前的命令
         if self.current_command_thread and self.current_command_thread.isRunning():
@@ -516,8 +761,8 @@ class MainWindow(QMainWindow):
 
         # 创建并启动新的命令线程
         self.current_command_thread = CommandThread(command, self.lang_mgr)
-        self.current_command_thread.output_received.connect(self.handle_command_output)
-        self.current_command_thread.command_finished.connect(self.handle_command_finished)
+        self.current_command_thread.output_received.connect(self.handle_command_output_to_cmd_log)
+        self.current_command_thread.command_finished.connect(self.handle_command_finished_to_cmd_log)
         self.current_command_thread.start()
 
     def handle_special_commands(self, command):
@@ -526,17 +771,17 @@ class MainWindow(QMainWindow):
             path = command.split(" ", 1)[1].strip('"').strip("'")
             if os.path.exists(path):
                 if os.path.isdir(path):
-                    self.log(f"Opening folder: {path}", "info")
+                    self.log_to_command(f"Opening folder: {path}", "info")
                     if open_folder(path):
-                        self.log("Folder opened successfully", "success")
+                        self.log_to_command("Folder opened successfully", "success")
                     else:
-                        self.log("Failed to open folder", "error")
+                        self.log_to_command("Failed to open folder", "error")
                     return True
                 elif os.path.isfile(path):
-                    self.log(f"Opening file: {path}", "info")
+                    self.log_to_command(f"Opening file: {path}", "info")
                     return True
             else:
-                self.log(f"Path not found: {path}", "error")
+                self.log_to_command(f"Path not found: {path}", "error")
                 return True
         return False
 
@@ -550,6 +795,17 @@ class MainWindow(QMainWindow):
             self.log(self.lang_mgr.get_text("cmd_complete"), "success")
         else:
             self.log(self.lang_mgr.format_text("cmd_return_error", return_code), "error")
+
+    def handle_command_output_to_cmd_log(self, text, tag):
+        """处理命令输出到命令工具日志"""
+        self.log_to_command(text.rstrip(), "error" if tag == "error" else None)
+
+    def handle_command_finished_to_cmd_log(self, return_code):
+        """处理命令执行完成到命令工具日志"""
+        if return_code == 0:
+            self.log_to_command(self.lang_mgr.get_text("cmd_complete"), "success")
+        else:
+            self.log_to_command(self.lang_mgr.format_text("cmd_return_error", return_code), "error")
 
     def log(self, message, tag=None):
         """添加日志消息"""
@@ -580,10 +836,48 @@ class MainWindow(QMainWindow):
         # 更新状态栏
         self.status_bar.showMessage(message)
 
+    def log_to_command(self, message, tag=None):
+        """输出日志到命令工具日志区域"""
+        if not hasattr(self, 'cmd_log_text'):
+            return
+            
+        # 获取当前时间
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        # 根据标签选择颜色
+        color_map = self.style_mgr.get_log_colors()
+        color = color_map.get(tag, color_map.get("normal"))
+        
+        # 格式化消息
+        formatted_message = f"[{timestamp}] {message}"
+        
+        # 移动到文档末尾
+        cursor = self.cmd_log_text.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        
+        # 设置文本颜色
+        char_format = cursor.charFormat()
+        char_format.setForeground(color)
+        cursor.setCharFormat(char_format)
+        
+        # 插入文本
+        cursor.insertText(formatted_message + "\n")
+        
+        # 滚动到底部
+        scrollbar = self.cmd_log_text.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
     def clear_log(self):
         """清除日志"""
         self.log_text.clear()
         self.log(self.lang_mgr.get_text("clear_log"), "info")
+
+    def clear_command_log(self):
+        """清除命令日志"""
+        if hasattr(self, 'cmd_log_text'):
+            self.cmd_log_text.clear()
+            self.log_to_command(self.lang_mgr.get_text("clear_log"), "info")
 
     def show_welcome_message(self):
         """显示欢迎消息"""
@@ -630,6 +924,108 @@ class MainWindow(QMainWindow):
         # 为主要按钮设置样式
         self.unpack_btn.setStyleSheet(self.style_mgr.get_button_style("primary"))
         self.repack_btn.setStyleSheet(self.style_mgr.get_button_style("success"))
+        
+        # 应用其他组件的主题样式
+        self._apply_theme_aware_styles()
+        
+        # 为集成的组件应用样式
+        self._apply_integrated_components_styles()
+
+    def _apply_theme_aware_styles(self):
+        """应用主题感知的样式"""
+        is_dark = self.style_mgr.is_dark_mode()
+        
+        # 标题样式
+        title_style = """
+            font-weight: bold; 
+            font-size: 14px;
+            margin-bottom: 8px;
+        """
+        if hasattr(self, 'log_title'):
+            self.log_title.setStyleSheet(title_style)
+        if hasattr(self, 'cmd_title'):
+            self.cmd_title.setStyleSheet(title_style)
+        if hasattr(self, 'cmd_log_title'):
+            self.cmd_log_title.setStyleSheet(title_style)
+        
+        # 清除日志按钮
+        if hasattr(self, 'clear_log_btn'):
+            self.clear_log_btn.setStyleSheet(self.style_mgr.get_button_style("warning"))
+        if hasattr(self, 'clear_cmd_log_btn'):
+            self.clear_cmd_log_btn.setStyleSheet(self.style_mgr.get_button_style("warning"))
+        
+        # 日志文本区域样式 - 使用最小化的自定义样式
+        if hasattr(self, 'log_text'):
+            log_style = """
+                QTextEdit {
+                    font-family: Monaco, Menlo, 'DejaVu Sans Mono', monospace;
+                    border-radius: 4px;
+                    padding: 4px;
+                }
+            """
+            self.log_text.setStyleSheet(log_style)
+        
+        # 命令工具日志文本区域样式 - 使用最小化的自定义样式
+        if hasattr(self, 'cmd_log_text'):
+            cmd_log_style = """
+                QTextEdit {
+                    font-family: Monaco, Menlo, 'DejaVu Sans Mono', monospace;
+                    border-radius: 4px;
+                    padding: 8px;
+                }
+            """
+            self.cmd_log_text.setStyleSheet(cmd_log_style)
+        
+        # 选择目标按钮
+        if hasattr(self, 'select_target_btn'):
+            self.select_target_btn.setStyleSheet(self.style_mgr.get_button_style())
+        
+        # 清除目标按钮
+        if hasattr(self, 'clear_target_btn'):
+            self.clear_target_btn.setStyleSheet(self.style_mgr.get_button_style("danger"))
+        
+        # 清除命令按钮
+        if hasattr(self, 'clear_cmd_btn'):
+            self.clear_cmd_btn.setStyleSheet(self.style_mgr.get_button_style())
+        
+        # 浏览按钮
+        if hasattr(self, 'browse_btn'):
+            self.browse_btn.setStyleSheet(self.style_mgr.get_button_style())
+        
+        # 命令输入框 - 使用最小化的自定义样式
+        if hasattr(self, 'cmd_entry'):
+            cmd_entry_style = """
+                QLineEdit {
+                    padding: 8px;
+                    border-radius: 4px;
+                    font-family: Monaco, Menlo, 'DejaVu Sans Mono', monospace;
+                }
+            """
+            self.cmd_entry.setStyleSheet(cmd_entry_style)
+        
+        # 执行命令按钮
+        if hasattr(self, 'cmd_btn'):
+            self.cmd_btn.setStyleSheet(self.style_mgr.get_button_style("primary"))
+        
+        # 更新目标标签样式
+        if hasattr(self, 'target_label') and not self.current_target_path:
+            self._update_target_label_style(False)
+
+    def _apply_integrated_components_styles(self):
+        """为集成的组件应用样式"""
+        # 为插件管理器应用样式
+        if hasattr(self, 'package_manager') and self.package_manager:
+            if hasattr(self.package_manager, 'style_mgr'):
+                self.package_manager.style_mgr = self.style_mgr
+            # 为插件管理器应用全局样式
+            self.style_mgr.apply_global_style(self.package_manager)
+        
+        # 为软件源管理器应用样式
+        if hasattr(self, 'repo_manager_widget') and self.repo_manager_widget:
+            if hasattr(self.repo_manager_widget, 'style_mgr'):
+                self.repo_manager_widget.style_mgr = self.style_mgr
+            # 为软件源管理器应用全局样式
+            self.style_mgr.apply_global_style(self.repo_manager_widget)
 
     def update_ui_language(self):
         """更新界面语言"""
@@ -637,23 +1033,33 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.lang_mgr.get_text("app_title"))
 
         # 更新标签文本
-        self.info_label.setText(self.lang_mgr.get_text("tip_drag_drop"))
-        self.drop_label.setText(self.lang_mgr.get_text("drop_zone"))
+        if hasattr(self, 'info_label'):
+            self.info_label.setText(self.lang_mgr.get_text("tip_drag_drop"))
+        if hasattr(self, 'drop_label'):
+            self.drop_label.setText(self.lang_mgr.get_text("drop_zone_hint"))
 
         # 更新按钮文本
-        self.unpack_btn.setText(self.lang_mgr.get_text("unpack_deb"))
-        self.repack_btn.setText(self.lang_mgr.get_text("repack_folder"))
-        self.clear_log_btn.setText(self.lang_mgr.get_text("clear_log"))
-        self.cmd_btn.setText(self.lang_mgr.get_text("execute"))
-        self.clear_cmd_btn.setText(self.lang_mgr.get_text("clear"))
-        self.clear_cmd_btn.setToolTip(self.lang_mgr.get_text("clear_command"))
-        self.browse_btn.setText(self.lang_mgr.get_text("browse"))
-        self.select_target_btn.setText(self.lang_mgr.get_text("select_target_file"))
-        self.clear_target_btn.setText(self.lang_mgr.get_text("clear"))
-        self.clear_target_btn.setToolTip(self.lang_mgr.get_text("clear_target_selection"))
+        if hasattr(self, 'unpack_btn'):
+            self.unpack_btn.setText(self.lang_mgr.get_text("unpack_deb"))
+        if hasattr(self, 'repack_btn'):
+            self.repack_btn.setText(self.lang_mgr.get_text("repack_folder"))
+        if hasattr(self, 'clear_log_btn'):
+            self.clear_log_btn.setText(self.lang_mgr.get_text("clear_log"))
+        if hasattr(self, 'cmd_btn'):
+            self.cmd_btn.setText(self.lang_mgr.get_text("execute"))
+        if hasattr(self, 'clear_cmd_btn'):
+            self.clear_cmd_btn.setText(self.lang_mgr.get_text("clear"))
+            self.clear_cmd_btn.setToolTip(self.lang_mgr.get_text("clear_command"))
+        if hasattr(self, 'browse_btn'):
+            self.browse_btn.setText(self.lang_mgr.get_text("browse"))
+        if hasattr(self, 'select_target_btn'):
+            self.select_target_btn.setText(self.lang_mgr.get_text("select_target_file"))
+        if hasattr(self, 'clear_target_btn'):
+            self.clear_target_btn.setText(self.lang_mgr.get_text("clear"))
+            self.clear_target_btn.setToolTip(self.lang_mgr.get_text("clear_target_selection"))
         
         # 更新目标标签（如果没有选择目标）
-        if not self.current_target_path:
+        if hasattr(self, 'target_label') and not self.current_target_path:
             self.target_label.setText(self.lang_mgr.get_text("no_target_selected"))
 
         # 更新组框标题
@@ -666,7 +1072,8 @@ class MainWindow(QMainWindow):
             self.drop_group.setTitle(self.lang_mgr.get_text("drop_zone"))
 
         # 更新占位符文本
-        self.cmd_entry.setPlaceholderText(self.lang_mgr.get_text("cmd_placeholder"))
+        if hasattr(self, 'cmd_entry'):
+            self.cmd_entry.setPlaceholderText(self.lang_mgr.get_text("cmd_placeholder"))
 
         # 更新快捷命令
         self.update_command_presets()
@@ -676,8 +1083,29 @@ class MainWindow(QMainWindow):
         
 
         # 更新状态栏
-        self.status_bar.showMessage(self.lang_mgr.get_text("ready"))
+        if hasattr(self, 'status_bar'):
+            self.status_bar.showMessage(self.lang_mgr.get_text("ready"))
 
+        # 更新集成组件的语言
+        if hasattr(self, 'package_manager') and self.package_manager:
+            if hasattr(self.package_manager, 'update_language'):
+                self.package_manager.update_language(self.lang_mgr)
+        
+        if hasattr(self, 'repo_manager_widget') and self.repo_manager_widget:
+            if hasattr(self.repo_manager_widget, 'update_language'):
+                self.repo_manager_widget.update_language(self.lang_mgr)
+        
+        if hasattr(self, 'terminal_widget') and self.terminal_widget:
+            if hasattr(self.terminal_widget, 'update_language'):
+                self.terminal_widget.update_language(self.lang_mgr)
+        
+        # 更新选项卡标题
+        if hasattr(self, 'tab_widget'):
+            self.tab_widget.setTabText(0, self.lang_mgr.get_text("deb_tools"))
+            self.tab_widget.setTabText(1, self.lang_mgr.get_text("package_manager"))
+            self.tab_widget.setTabText(2, self.lang_mgr.get_text("manage_sources"))
+            self.tab_widget.setTabText(3, self.lang_mgr.get_text("command_tools"))
+        
         # 重新应用样式
         self.apply_styles()
 
@@ -741,8 +1169,99 @@ class MainWindow(QMainWindow):
         maximized = window_config.get("maximized", False)
 
         self.resize(width, height)
+        
+        # 将窗口居中显示
+        from PyQt6.QtWidgets import QApplication
+        screen = QApplication.primaryScreen().geometry()
+        x = (screen.width() - width) // 2
+        y = (screen.height() - height) // 2
+        self.move(x, y)
+        
         if maximized:
             self.showMaximized()
+    
+    def center_window(self):
+        """强制居中窗口"""
+        if self.isMaximized():
+            return
+            
+        # 获取屏幕几何
+        from PyQt6.QtWidgets import QApplication
+        screen = QApplication.primaryScreen().availableGeometry()
+        
+        # 获取当前窗口大小
+        window_rect = self.frameGeometry()
+        
+        # 计算居中位置
+        x = (screen.width() - window_rect.width()) // 2 + screen.x()
+        y = (screen.height() - window_rect.height()) // 2 + screen.y()
+        
+        # 确保窗口不会超出屏幕边界
+        x = max(screen.x(), min(x, screen.x() + screen.width() - window_rect.width()))
+        y = max(screen.y(), min(y, screen.y() + screen.height() - window_rect.height()))
+        
+        self.move(x, y)
+    
+    def resizeEvent(self, event):
+        """窗口大小变化事件"""
+        super().resizeEvent(event)
+        # 动态调整布局
+        QTimer.singleShot(0, self.adjust_dynamic_layout)
+    
+    def adjust_dynamic_layout(self):
+        """动态调整布局以适应窗口大小"""
+        if not hasattr(self, 'tab_widget'):
+            return
+            
+        window_width = self.width()
+        window_height = self.height()
+        
+        # 根据窗口大小调整组件
+        if window_width < 800:
+            # 窄屏模式：隐藏一些不必要的标签
+            self.optimize_for_narrow_screen()
+        else:
+            # 宽屏模式：恢复正常布局
+            self.optimize_for_wide_screen()
+        
+        # 调整终端分割器比例
+        if hasattr(self, 'terminal_widget') and hasattr(self.terminal_widget, 'splitter'):
+            if window_height < 600:
+                # 矮屏：减少快捷面板高度
+                self.terminal_widget.splitter.setSizes([window_height - 200, 100])
+            else:
+                # 正常高度：恢复默认比例
+                self.terminal_widget.splitter.setSizes([window_height - 250, 200])
+    
+    def optimize_for_narrow_screen(self):
+        """为窄屏优化布局"""
+        if hasattr(self, 'info_label'):
+            self.info_label.setWordWrap(True)
+        
+        # 如果有工具栏，隐藏一些不重要的按钮文本
+        if hasattr(self, 'terminal_widget'):
+            terminal = self.terminal_widget
+            if hasattr(terminal, 'clear_btn'):
+                terminal.clear_btn.setText("Clear")
+            if hasattr(terminal, 'stop_btn'):
+                terminal.stop_btn.setText("Stop")
+            if hasattr(terminal, 'cd_btn'):
+                terminal.cd_btn.setText("CD")
+    
+    def optimize_for_wide_screen(self):
+        """为宽屏恢复正常布局"""
+        if hasattr(self, 'info_label'):
+            self.info_label.setWordWrap(True)
+        
+        # 恢复完整的按钮文本
+        if hasattr(self, 'terminal_widget'):
+            terminal = self.terminal_widget
+            if hasattr(terminal, 'clear_btn') and hasattr(terminal, 'lang_mgr'):
+                terminal.clear_btn.setText(terminal.lang_mgr.get_text("clear"))
+            if hasattr(terminal, 'stop_btn') and hasattr(terminal, 'lang_mgr'):
+                terminal.stop_btn.setText(terminal.lang_mgr.get_text("stop"))
+            if hasattr(terminal, 'cd_btn') and hasattr(terminal, 'lang_mgr'):
+                terminal.cd_btn.setText(terminal.lang_mgr.get_text("change_directory"))
 
     def save_window_state(self):
         """保存窗口状态"""
@@ -766,5 +1285,105 @@ class MainWindow(QMainWindow):
 
         # 保存窗口状态
         self.save_window_state()
-
-        event.accept()
+    
+    
+    def open_repo_manager(self):
+        """打开软件源管理器"""
+        try:
+            # 检查是否已有实例
+            if self.dialogs['repo_manager'] and self.dialogs['repo_manager'].isVisible():
+                # 如果窗口已存在且可见，激活它
+                self.dialogs['repo_manager'].raise_()
+                self.dialogs['repo_manager'].activateWindow()
+                return
+            
+            from src.ui.repo_manager_dialog import RepoManagerDialog
+            
+            # 获取或创建 repo_manager
+            if not hasattr(self.app_core, 'repo_manager'):
+                from src.core.repo_manager import RepoManager
+                app_dir = self.app_core.config_mgr.config_dir
+                self.app_core.repo_manager = RepoManager(app_dir)
+            
+            # 创建并显示源管理器
+            dialog = RepoManagerDialog(self, self.app_core.repo_manager, self.lang_mgr)
+            
+            # 连接关闭信号，清理引用
+            dialog.finished.connect(lambda: self.on_dialog_closed('repo_manager'))
+            
+            # 如果包管理器已打开，在关闭源管理器时更新它
+            if self.dialogs['package_manager'] and self.dialogs['package_manager'].isVisible():
+                dialog.finished.connect(lambda: self.update_package_manager())
+            
+            # 保存引用
+            self.dialogs['repo_manager'] = dialog
+            
+            dialog.show()  # 使用 show() 而不是 exec()，允许非模态显示
+        except ImportError as e:
+            self.log(f"Error: Repository manager module not found: {e}", "error")
+            QMessageBox.critical(self, "Error", "Repository manager feature is not available.")
+        except Exception as e:
+            self.log(f"Error opening repository manager: {e}", "error")
+            QMessageBox.critical(self, "Error", f"Failed to open repository manager: {str(e)}")
+    
+    def on_package_downloaded(self, file_path):
+        """处理下载完成的包"""
+        self.log(f"[DEBUG] Downloaded package: {file_path}")
+        
+        # 询问是否解包
+        reply = QMessageBox.question(self,
+                                   self.lang_mgr.get_text("unpack_confirm"),
+                                   self.lang_mgr.get_text("unpack_question").format(os.path.basename(file_path)))
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            self.app_core.process_dropped_item(file_path)
+    
+    def open_package_manager(self):
+        """打开插件管理器（新的整合界面）"""
+        try:
+            # 检查是否已有实例
+            if self.dialogs['package_manager'] and self.dialogs['package_manager'].isVisible():
+                # 如果窗口已存在且可见，激活它
+                self.dialogs['package_manager'].raise_()
+                self.dialogs['package_manager'].activateWindow()
+                return
+            
+            from src.ui.package_manager_widget import PackageManagerWidget
+            
+            # 获取或创建 repo_manager
+            if not hasattr(self.app_core, 'repo_manager'):
+                from src.core.repo_manager import RepoManager
+                app_dir = self.app_core.config_mgr.config_dir
+                self.app_core.repo_manager = RepoManager(app_dir)
+            
+            # 创建并显示插件管理器
+            dialog = PackageManagerWidget(self, self.app_core.repo_manager, self.lang_mgr)
+            dialog.package_downloaded.connect(self.on_package_downloaded)
+            
+            # 连接关闭信号，清理引用
+            dialog.finished.connect(lambda: self.on_dialog_closed('package_manager'))
+            
+            # 保存引用
+            self.dialogs['package_manager'] = dialog
+            
+            dialog.show()
+        except ImportError as e:
+            self.log(f"Error: Package manager module not found: {e}", "error")
+            QMessageBox.critical(self, "Error", "Package manager feature is not available.")
+        except Exception as e:
+            self.log(f"Error opening package manager: {e}", "error")
+            QMessageBox.critical(self, "Error", f"Failed to open package manager: {str(e)}")
+    
+    def open_source_manager(self):
+        """打开软件源管理器（保留以兼容）"""
+        self.open_package_manager()
+    
+    def on_dialog_closed(self, dialog_name):
+        """对话框关闭时的处理"""
+        self.dialogs[dialog_name] = None
+    
+    def update_package_manager(self):
+        """更新包管理器（当源管理器修改后）"""
+        if self.dialogs['package_manager'] and hasattr(self.dialogs['package_manager'], 'update_source_menu'):
+            self.dialogs['package_manager'].update_source_menu()
+            self.dialogs['package_manager'].load_all_packages()

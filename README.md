@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.0-blue?style=for-the-badge&logo=apple&logoColor=white)
+![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.1-blue?style=for-the-badge&logo=apple&logoColor=white)
 
 [![License](https://img.shields.io/github/license/Evil0ctal/SimpleTweakEditor?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -14,7 +14,7 @@
 
 **专业的iOS .deb文件编辑工具 / Professional iOS .deb Package Editor**
 
-[English](README_EN.md) | [快速开始](QUICK_START.md) | [下载](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
+[English](README_EN.md) | [快速开始](docs/QUICK_START.md) | [下载](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 
 </div>
 
@@ -32,13 +32,17 @@
 - **拖放支持** - 直接拖放文件进行操作
 - **Control文件编辑** - 内置编辑器和验证
 - **批处理模式** - 支持命令行批量操作
+- **软件包管理** - 内置软件包浏览器和仓库管理
+- **交互式终端** - 真正的PTY终端支持多标签页
 
 ### 🌍 用户体验 / User Experience
 - **多语言支持** - 中文/英文界面，自动检测系统语言
-- **暗色模式** - 自动适配系统主题
+- **多主题支持** - 暗色模式、亮色模式、彩色主题
 - **状态保存** - 记住窗口大小和设置
 - **智能提示** - 操作引导和错误提示
 - **智能查找** - 自动在多个路径查找dpkg-deb工具
+- **动态布局** - 智能适配不同屏幕尺寸
+- **窗口居中** - 自动窗口居中功能
 
 ## 安装 / Installation
 
@@ -155,32 +159,51 @@ SimpleTweakEditor/
 ├── main.py                    # 程序入口 / Main entry
 ├── requirements.txt           # 依赖列表 / Dependencies
 ├── README.md                 # 本文件 / This file
+├── README_EN.md             # 英文文档 / English docs
+├── RELEASE_NOTES.md         # 发布日志 / Release notes
 ├── LICENSE                   # 许可证 / License
-├── PROJECT_STRUCTURE.md      # 详细架构文档 / Architecture docs
-├── QUICK_START.md           # 快速开始指南 / Quick start guide
+├── docs/                     # 文档目录 / Documentation
+│   ├── PROJECT_STRUCTURE.md  # 详细架构文档 / Architecture docs
+│   ├── QUICK_START.md        # 快速开始指南 / Quick start guide
+│   ├── FEATURE_ROADMAP.md    # 功能路线图 / Feature roadmap
+│   ├── REPO_MANAGER_GUIDE.md # 仓库管理指南 / Repo manager guide
+│   └── THEMES.md             # 主题说明 / Theme documentation
 │
 ├── src/                      # 源代码 / Source code
     ├── core/                 # 核心模块 / Core modules
     │   ├── app.py           # 主应用逻辑 / Main app logic
     │   ├── config.py        # 配置管理 / Config management
-    │   └── events.py        # 事件定义 / Event definitions
+    │   ├── events.py        # 事件定义 / Event definitions
+    │   └── repo_manager.py  # 仓库管理 / Repository management
     │
     ├── ui/                   # 用户界面 / User interface
     │   ├── main_window.py   # 主窗口 / Main window
     │   ├── control_editor.py # Control编辑器 / Control editor
     │   ├── about_dialog_improved.py # 关于对话框 / About dialog
+    │   ├── interactive_terminal.py # 交互式终端 / Interactive terminal
+    │   ├── package_browser_dialog.py # 软件包浏览器 / Package browser
+    │   ├── package_manager_widget.py # 软件包管理器 / Package manager
+    │   ├── repo_manager_dialog.py # 仓库管理对话框 / Repo manager dialog
     │   └── styles.py        # 样式管理 / Style management
     │
     ├── workers/              # 后台任务 / Background tasks
-    │   └── command_thread.py # 命令执行 / Command execution
+    │   ├── command_thread.py # 命令执行 / Command execution
+    │   └── download_thread.py # 下载任务 / Download tasks
     │
     ├── utils/                # 工具函数 / Utilities
     │   ├── file_operations.py # 文件操作 / File operations
     │   └── system_utils.py  # 系统工具 / System utilities
     │
-    └── localization/        # 多语言 / Localization
-        ├── language_manager.py # 语言管理 / Language manager
-        └── translations.py  # 翻译数据 / Translation data
+    ├── localization/        # 多语言 / Localization
+    │   ├── language_manager.py # 语言管理 / Language manager
+    │   └── translations.py  # 翻译数据 / Translation data
+    │
+    ├── resources/           # 资源文件 / Resources
+    │   └── default_repositories.json # 默认软件源 / Default repositories
+    │
+    └── utils/               # 工具函数 / Utilities
+        ├── file_operations.py # 文件操作 / File operations
+        └── system_utils.py  # 系统工具 / System utilities
 │
 ├── build_scripts/            # 构建脚本 / Build scripts
 │   ├── build_macos_app.py   # macOS 标准版 .app 构建脚本
@@ -216,15 +239,26 @@ SimpleTweakEditor/
 
 ## 更新日志 / Changelog
 
-### v1.0.0 (2025-01)
-- ✨ 完整的GUI界面
-- 🔐 安全性增强
+### v1.0.1 (2025-05-28)
+- 🔧 **UI布局优化** - 修复交互式终端组件重叠和显示问题
+- 🌍 **语言切换稳定性** - 解决切换语言时的崩溃问题
+- 🎨 **字体兼容性** - 改进跨平台字体处理，解决macOS字体警告
+- 📐 **动态布局** - 优化窗口大小适配和组件自动调整
+- 🖥️ **终端改进** - 真正的PTY终端支持，多标签页功能
+- 📦 **软件包管理** - 内置软件包浏览器和仓库管理功能
+- 🎯 **窗口居中** - 自动窗口定位和状态保存
+- 🗂️ **文档整理** - 重新组织项目文档结构
+
+### v1.0.0 (2025-05-24)
+- ✨ 首次正式发布
+- 🔐 安全性增强和路径验证
 - 🌍 中英文支持，自动检测系统语言
-- 🎨 暗色模式支持
-- 📦 模块化重构
-- 🐛 修复已知问题
+- 🎨 多主题支持（暗色、亮色、彩色）
+- 📦 模块化重构，提升代码质量
 - 🚀 独立版.app构建，包含所有依赖
 - 🔍 智能查找dpkg-deb工具路径
+
+详细更新日志请查看 [RELEASE_NOTES.md](RELEASE_NOTES.md)
 
 ## 许可证 / License
 

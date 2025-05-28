@@ -4,19 +4,11 @@ Control文件编辑器模块
 提供DEBIAN/control文件的编辑和验证功能
 """
 
-from typing import TYPE_CHECKING
-
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtGui import QFont, QPalette
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QPlainTextEdit, QPushButton,
     QDialogButtonBox, QMessageBox
 )
-
-if TYPE_CHECKING:
-    pass
-else:
-    Signal = pyqtSignal
 
 from src.utils.file_operations import validate_control_file
 
@@ -35,7 +27,6 @@ class ControlEditorDialog(QDialog):
         self.lang_mgr = parent.lang_mgr if parent and hasattr(parent, 'lang_mgr') else None
 
         self.setupUI()
-        self.apply_theme()
 
     def setupUI(self):
         """设置用户界面"""
@@ -55,7 +46,9 @@ class ControlEditorDialog(QDialog):
         self.editor.setPlainText(self.control_content)
 
         # 设置等宽字体
-        font = QFont("Consolas", 10)
+        font = QFont()
+        font.setFamily("Monaco, Menlo, 'DejaVu Sans Mono', monospace")
+        font.setPointSize(10)
         if not font.exactMatch():
             font = QFont("Monaco", 10)
             if not font.exactMatch():
@@ -71,7 +64,7 @@ class ControlEditorDialog(QDialog):
 
         # 底部提示标签
         tip_label = QLabel(self._get_text("control_tip"))
-        tip_label.setStyleSheet("color: gray; font-size: 12px;")
+        tip_label.setProperty("class", "secondary")
         tip_label.setWordWrap(True)
         layout.addWidget(tip_label)
 
@@ -100,74 +93,12 @@ class ControlEditorDialog(QDialog):
 
     def apply_theme(self):
         """应用主题样式"""
-        # 检测是否为暗色模式
-        palette = self.palette()
-        is_dark_mode = palette.color(QPalette.ColorRole.Window).lightness() < 128
-
-        if is_dark_mode:
-            # 暗色模式样式
-            self.setStyleSheet("""
-                QDialog {
-                    background-color: #2b2b2b;
-                    color: #ffffff;
-                }
-                QLabel {
-                    color: #ffffff;
-                }
-                QPlainTextEdit {
-                    background-color: #1e1e1e;
-                    color: #ffffff;
-                    border: 1px solid #555555;
-                    selection-background-color: #3399ff;
-                }
-                QPushButton {
-                    background-color: #3c3c3c;
-                    color: #ffffff;
-                    border: 1px solid #555555;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #4a4a4a;
-                    border-color: #777777;
-                }
-                QPushButton:pressed {
-                    background-color: #2a2a2a;
-                }
-                QLabel[color="gray"] {
-                    color: #cccccc;
-                }
-            """)
-        else:
-            # 亮色模式样式
-            self.setStyleSheet("""
-                QDialog {
-                    background-color: #ffffff;
-                    color: #000000;
-                }
-                QPlainTextEdit {
-                    background-color: #ffffff;
-                    color: #000000;
-                    border: 1px solid #cccccc;
-                    selection-background-color: #3399ff;
-                }
-                QPushButton {
-                    background-color: #f0f0f0;
-                    color: #000000;
-                    border: 1px solid #cccccc;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #e0e0e0;
-                    border-color: #999999;
-                }
-                QPushButton:pressed {
-                    background-color: #d0d0d0;
-                }
-            """)
+        # qt-material会自动处理主题，只需要设置字体
+        self.editor.setStyleSheet("""
+            QPlainTextEdit {
+                font-family: Monaco, Menlo, 'DejaVu Sans Mono', monospace;
+            }
+        """)
 
     def _get_text(self, key):
         """获取本地化文本"""
@@ -227,7 +158,7 @@ class ControlEditorDialog(QDialog):
         """设置编辑器内容"""
         self.editor.setPlainText(content)
 
-    def updateLanguage(self, lang_mgr):
+    def update_language(self, lang_mgr):
         """更新语言"""
         self.lang_mgr = lang_mgr
 
@@ -247,6 +178,6 @@ class ControlEditorDialog(QDialog):
             cancel_button.setText(self._get_text("cancel"))
 
     def showEvent(self, event):
-        """显示事件 - 确保样式正确应用"""
+        """显示事件"""
         super().showEvent(event)
-        self.apply_theme()
+        # qt-material会自动处理主题

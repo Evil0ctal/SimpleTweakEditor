@@ -5,20 +5,14 @@
 """
 
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-from PyQt6.QtCore import Qt, QUrl, pyqtSignal
+from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QFont, QPalette, QDesktopServices, QPixmap
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QTextBrowser, QApplication
 )
-
-if TYPE_CHECKING:
-    from PyQt6.QtWidgets import QApplication as QApp
-else:
-    Signal = pyqtSignal
-    QApp = QApplication
 
 
 class ImprovedAboutDialog(QDialog):
@@ -27,18 +21,16 @@ class ImprovedAboutDialog(QDialog):
     def __init__(self, parent=None, translator=None):
         super().__init__(parent)
         self.translator = translator
-        self.is_dark_mode = self.detect_dark_mode()
         self.setup_ui()
-        self.apply_theme()
         
     def detect_dark_mode(self):
-        """检测是否为暗色模式"""
-        app: Optional[QApp] = QApplication.instance()
+        """检测是否为暗色模式 - qt-material会处理这个"""
+        # qt-material会自动处理主题，这里只是为了HTML内容
+        app: Optional[QApplication] = QApplication.instance()
         if app is None:
             return False
         palette = app.palette()
         window_color = palette.color(QPalette.ColorRole.Window)
-        # 通过背景色亮度判断是否为暗色模式
         return window_color.lightness() < 128
         
     def setup_ui(self):
@@ -111,22 +103,28 @@ class ImprovedAboutDialog(QDialog):
         # 根据主题设置内容
         self.update_content()
         
+        # 应用最小化的样式
+        self.apply_theme()
+        
         layout.addWidget(self.info_browser)
         
     def update_content(self):
         """更新内容（根据主题）"""
-        # 颜色方案
+        # 检测当前主题
+        self.is_dark_mode = self.detect_dark_mode()
+        
+        # 使用更通用的颜色，让qt-material处理大部分样式
         if self.is_dark_mode:
-            bg_color = "#2b2b2b"
-            text_color = "#e0e0e0"
+            bg_color = "transparent"
+            text_color = "inherit"
             link_color = "#4dabf7"
             heading_color = "#74c0fc"
             secondary_color = "#999"
         else:
-            bg_color = "#ffffff"
-            text_color = "#333333"
-            link_color = "#007AFF"
-            heading_color = "#0066CC"
+            bg_color = "transparent"
+            text_color = "inherit"
+            link_color = "#1976d2"
+            heading_color = "#1565c0"
             secondary_color = "#666666"
         
         # 构建 HTML 内容
@@ -230,112 +228,42 @@ class ImprovedAboutDialog(QDialog):
         # 关闭按钮
         self.close_btn = QPushButton(self.translator.get_text("ok"))
         self.close_btn.setDefault(True)
-        self.close_btn.clicked.connect(self.accept)  # type: ignore
+        self.close_btn.clicked.connect(self.accept)
         self.close_btn.setFixedWidth(100)
         button_layout.addWidget(self.close_btn)
         
         layout.addLayout(button_layout)
+    
+    def update_language(self, translator):
+        """更新语言"""
+        self.translator = translator
+        # 重建UI以更新所有文本
+        self.setup_ui()
         
     def apply_theme(self):
         """应用主题样式"""
-        if self.is_dark_mode:
-            # 暗色主题
-            self.setStyleSheet("""
-                QDialog {
-                    background-color: #2b2b2b;
-                    color: #e0e0e0;
-                }
-                QTextBrowser {
-                    background-color: #2b2b2b;
-                    border: none;
-                }
-                QPushButton {
-                    background-color: #3a3a3a;
-                    border: 1px solid #555;
-                    color: #e0e0e0;
-                    padding: 6px 12px;
-                    border-radius: 4px;
-                }
-                QPushButton:hover {
-                    background-color: #4a4a4a;
-                    border-color: #666;
-                }
-                QPushButton:pressed {
-                    background-color: #2a2a2a;
-                }
-                QPushButton:default {
-                    background-color: #0e639c;
-                    border-color: #0e639c;
-                }
-                QPushButton:default:hover {
-                    background-color: #1177bb;
+        # qt-material会处理大部分样式
+        # 只设置最少的必要样式
+        self.info_browser.setStyleSheet("""
+            QTextBrowser {
+                border: none;
+            }
+        """)
+        
+        # 版本标签使用secondary类
+        self.version_label.setProperty("class", "secondary")
+        
+        # 图标样式 - 只有在没有图标时才应用背景
+        if self.icon_label.pixmap() is None:
+            self.icon_label.setStyleSheet("""
+                QLabel {
+                    background-color: palette(highlight);
+                    border-radius: 12px;
+                    color: palette(highlighted-text);
+                    font-size: 24px;
+                    font-weight: bold;
                 }
             """)
-            
-            # 图标样式 - 只有在没有图标时才应用背景
-            if self.icon_label.pixmap() is None:
-                self.icon_label.setStyleSheet("""
-                    QLabel {
-                        background-color: #0e639c;
-                        border-radius: 12px;
-                        color: white;
-                        font-size: 24px;
-                        font-weight: bold;
-                    }
-                """)
-            
-            # 版本标签颜色
-            self.version_label.setStyleSheet("color: #999;")
-            
-        else:
-            # 亮色主题
-            self.setStyleSheet("""
-                QDialog {
-                    background-color: #ffffff;
-                    color: #333333;
-                }
-                QTextBrowser {
-                    background-color: #ffffff;
-                    border: none;
-                }
-                QPushButton {
-                    background-color: #f0f0f0;
-                    border: 1px solid #d0d0d0;
-                    color: #333333;
-                    padding: 6px 12px;
-                    border-radius: 4px;
-                }
-                QPushButton:hover {
-                    background-color: #e0e0e0;
-                    border-color: #c0c0c0;
-                }
-                QPushButton:pressed {
-                    background-color: #d0d0d0;
-                }
-                QPushButton:default {
-                    background-color: #007AFF;
-                    border-color: #007AFF;
-                    color: white;
-                }
-                QPushButton:default:hover {
-                    background-color: #0051D5;
-                }
-            """)
-            
-            # 图标样式 - 只有在没有图标时才应用背景
-            if self.icon_label.pixmap() is None:
-                self.icon_label.setStyleSheet("""
-                    QLabel {
-                        background-color: #007AFF;
-                        border-radius: 12px;
-                        color: white;
-                        font-size: 24px;
-                        font-weight: bold;
-                    }
-                """)
-            
-            # 版本标签颜色
-            self.version_label.setStyleSheet("color: #666;")
         
     def open_github(self):
         """打开 GitHub 页面"""
