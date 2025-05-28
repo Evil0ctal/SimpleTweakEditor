@@ -17,6 +17,47 @@
 
 </div>
 
+## 📸 Screenshots
+
+<div align="center">
+<table>
+  <tr>
+    <td align="center">
+      <img src="screenshots/zh/main_window_dark.png" width="400" alt="主界面-深色主题">
+      <br>
+      <sub><b>主界面 - 深色主题</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/zh/package_manager.png" width="400" alt="软件包管理器">
+      <br>
+      <sub><b>软件包管理器</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/zh/interactive_terminal.png" width="400" alt="交互式终端">
+      <br>
+      <sub><b>交互式终端</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="screenshots/zh/control_editor.png" width="400" alt="Control文件编辑器">
+      <br>
+      <sub><b>Control文件编辑器</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/zh/package_history.png" width="400" alt="软件包版本选择">
+      <br>
+      <sub><b>软件包版本选择</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/zh/repo_manager.png" width="400" alt="仓库管理器">
+      <br>
+      <sub><b>仓库管理器</b></sub>
+    </td>
+  </tr>
+</table>
+</div>
+
 ## ✨ Features
 
 ### 🔐 Security First
