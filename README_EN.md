@@ -25,7 +25,7 @@
     <td align="center">
       <img src="screenshots/zh/main_window_dark.png" width="400" alt="主界面-深色主题">
       <br>
-      <sub><b>主界面 - 深色主题</b></sub>
+      <sub><b>主界面</b></sub>
     </td>
     <td align="center">
       <img src="screenshots/zh/package_manager.png" width="400" alt="软件包管理器">
