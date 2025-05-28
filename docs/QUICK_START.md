@@ -1,45 +1,30 @@
-# SimpleTweakEditor 快速启动指南
+# SimpleTweakEditor 快速开始指南
+
+*最后更新: 2025-05-28*
 
 ## 🚀 对于用户
 
 ### macOS 用户
 
 #### 最简单的方式 - 使用独立版 .app （推荐）
-1. 从 `releases/v1.0.0/macOS/` 下载 `SimpleTweakEditor.app` （独立版）
-2. 将 SimpleTweakEditor.app 拖到 Applications 文件夹
-3. 首次运行时，右键点击应用并选择"打开"
-4. 这个版本已包含所有Python依赖，但仍需要安装 dpkg：
+1. 从 [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases) 下载最新版本
+2. 下载 `SimpleTweakEditor-macOS.zip`
+3. 解压后将 SimpleTweakEditor.app 拖到 Applications 文件夹
+4. 首次运行时，右键点击应用并选择"打开"
+5. 安装 dpkg（如果还没有安装）：
    ```bash
    brew install dpkg
    ```
 
-#### 使用标准版 .app 包
-位置：`releases/v1.0.0/SimpleTweakEditor.app` （标准版）
-- 可以直接双击运行
-- 需要预先安装 Python 3.8+ 和依赖：
-   ```bash
-   pip3 install PyQt6 Pillow
-   brew install dpkg
-   ```
-
-### Linux 用户
-1. 下载 `SimpleTweakEditor-1.0.0-Linux.tar.gz` 或使用源代码包
-2. 解压并运行
-3. 确保安装了 dpkg：
-   ```bash
-   sudo apt-get install dpkg
-   ```
-
-## 🛠️ 对于开发者
-
-### 运行源代码
+#### 从源码运行
 ```bash
-# 克隆或下载项目
+# 克隆仓库
+git clone https://github.com/Evil0ctal/SimpleTweakEditor.git
 cd SimpleTweakEditor
 
 # 创建虚拟环境（推荐）
 python3 -m venv venv
-source venv/bin/activate  # macOS/Linux
+source venv/bin/activate
 
 # 安装依赖
 pip install -r requirements.txt
@@ -48,46 +33,155 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### 构建新版本
+### Linux 用户
+
+#### 使用 AppImage（推荐）
+1. 下载 `SimpleTweakEditor-x86_64.AppImage`
+2. 添加执行权限：
+   ```bash
+   chmod +x SimpleTweakEditor-x86_64.AppImage
+   ```
+3. 运行：
+   ```bash
+   ./SimpleTweakEditor-x86_64.AppImage
+   ```
+
+#### 从源码运行
 ```bash
-# 进入构建脚本目录
-cd build_scripts
+# 安装系统依赖
+sudo apt-get update
+sudo apt-get install python3 python3-pip dpkg
 
-# macOS: 构建独立版 .app 包（推荐）
-python3 build_macos_app_standalone.py
-
-# macOS: 构建标准版 .app 包
-python3 build_macos_app.py
-
-# 或一键构建所有版本
-./prepare_release.sh
-
-# 清理所有构建文件
-./clean_all.sh
+# 克隆并运行
+git clone https://github.com/Evil0ctal/SimpleTweakEditor.git
+cd SimpleTweakEditor
+pip3 install -r requirements.txt
+python3 main.py
 ```
 
-## 📁 项目结构
+## 📱 基本使用
 
-- **源代码**：`src/` 目录包含所有Python源文件
-- **主程序**：`main.py` 是程序入口
-- **构建脚本**：`build_scripts/` 目录包含所有构建相关脚本
-- **发布文件**：`releases/v1.0.0/` 包含所有可分发的文件
+### 1. 解包 .deb 文件
 
-## ⚠️ 常见问题
+#### 方法一：拖放操作
+- 直接将 .deb 文件拖到主界面的拖放区域
+- 自动开始解包过程
+
+#### 方法二：使用按钮
+1. 点击"解包 .deb 文件"按钮
+2. 选择要解包的 .deb 文件
+3. 选择输出目录
+4. 等待解包完成
+
+### 2. 编辑软件包内容
+
+#### 编辑 Control 文件
+1. 工具 → 编辑Control文件
+2. 在编辑器中修改包信息
+3. 保存更改
+
+#### 浏览和修改文件
+1. 使用文件管理器打开解包后的文件夹
+2. 修改需要的文件
+3. 确保不要删除 DEBIAN 目录
+
+### 3. 重新打包
+
+#### 方法一：拖放文件夹
+- 将包含 DEBIAN 目录的文件夹拖到主界面
+
+#### 方法二：使用按钮
+1. 点击"重新打包文件夹"按钮
+2. 选择要打包的文件夹（必须包含 DEBIAN 目录）
+3. 选择输出文件名和位置
+4. 等待打包完成
+
+## 🎯 高级功能
+
+### 软件包管理器
+1. 工具 → 软件包管理器
+2. 浏览和搜索软件包
+3. 查看包详情和版本历史
+4. 下载软件包到本地
+
+### 仓库管理
+1. 工具 → 软件源管理
+2. 添加新的软件源
+3. 编辑或删除现有源
+4. 刷新源列表
+
+### 交互式终端
+1. 切换到"交互式终端"标签
+2. 执行各种命令
+3. 支持多标签页操作
+4. 使用快速命令菜单
+
+### 主题切换
+1. 视图 → 主题
+2. 选择喜欢的主题
+3. 支持深色、浅色和彩色主题
+
+### 语言切换
+1. 语言 → 选择语言
+2. 支持中文和英文
+3. 自动保存语言设置
+
+## 🔧 命令行模式
+
+SimpleTweakEditor 也支持命令行操作：
+
+```bash
+# 查看帮助
+python main.py --help
+
+# 解包 .deb 文件
+python main.py --unpack package.deb --output ./unpacked/
+
+# 重新打包文件夹
+python main.py --repack ./package_folder/ --output new_package.deb
+
+# 批处理模式
+python main.py --batch --unpack "*.deb"
+
+# 设置语言
+python main.py --lang zh  # 中文
+python main.py --lang en  # English
+```
+
+## ❓ 常见问题
 
 ### Q: 提示找不到 dpkg-deb
-A: 应用会自动在多个路径查找dpkg-deb，如果仍然找不到，请安装 dpkg：
+**A:** 安装 dpkg：
 - macOS: `brew install dpkg`
 - Linux: `sudo apt-get install dpkg`
-- 应用会查找的路径包括：/usr/bin, /usr/local/bin, /opt/homebrew/bin 等
 
-### Q: 提示找不到 PyQt6
-A: 安装 Python 依赖：`pip3 install PyQt6 Pillow`
+### Q: 首次打开 macOS 应用提示无法验证
+**A:** 右键点击应用，选择"打开"，然后在弹出的对话框中再次点击"打开"
 
-### Q: macOS 提示"无法打开...因为它来自身份不明的开发者"
-A: 右键点击应用，选择"打开"，然后在弹出的对话框中再次点击"打开"
+### Q: 打包失败提示权限错误
+**A:** 确保 DEBIAN 目录中的脚本文件有正确的执行权限：
+```bash
+chmod 755 DEBIAN/postinst
+chmod 755 DEBIAN/prerm
+```
 
-## 📞 支持
+### Q: 如何查看更详细的错误信息
+**A:** 切换到"命令行"标签页查看详细的命令输出
 
-- GitHub Issues: https://github.com/Evil0ctal/SimpleTweakEditor/issues
-- 项目主页: https://github.com/Evil0ctal/SimpleTweakEditor
+## 🎨 提示和技巧
+
+1. **批量操作**: 使用命令行模式可以批量处理多个文件
+2. **快速访问**: 将常用的 .deb 文件拖到 Dock/任务栏旁边方便拖放
+3. **备份原文件**: 修改前建议备份原始 .deb 文件
+4. **测试修改**: 在测试设备上验证修改后的包是否正常工作
+
+## 📚 更多资源
+
+- [项目主页](https://github.com/Evil0ctal/SimpleTweakEditor)
+- [问题反馈](https://github.com/Evil0ctal/SimpleTweakEditor/issues)
+- [功能路线图](FEATURE_ROADMAP.md)
+- [项目结构](PROJECT_STRUCTURE.md)
+
+---
+
+*享受使用 SimpleTweakEditor！如有问题，欢迎提交 Issue。*
