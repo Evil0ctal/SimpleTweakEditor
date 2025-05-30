@@ -10,8 +10,9 @@
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-lightgrey?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor)
 [![GitHub Stars](https://img.shields.io/github/stars/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/Evil0ctal/SimpleTweakEditor/total?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
+[![Release](https://img.shields.io/github/v/release/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases/latest)
 
-**Professional iOS .deb Package Editor with Modern GUI**
+**Professional iOS .deb Package Editor**
 
 [中文文档](README.md) | [Quick Start](docs/QUICK_START.md) | [Download](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 
@@ -23,36 +24,36 @@
 <table>
   <tr>
     <td align="center">
-      <img src="screenshots/zh/main_window_dark.png" width="400" alt="主界面-深色主题">
+      <img src="screenshots/en/main_window_dark.png" width="400" alt="Main Interface - Dark Theme">
       <br>
-      <sub><b>主界面</b></sub>
+      <sub><b>Main Interface</b></sub>
     </td>
     <td align="center">
-      <img src="screenshots/zh/package_manager.png" width="400" alt="软件包管理器">
+      <img src="screenshots/en/package_manager.png" width="400" alt="Package Manager">
       <br>
-      <sub><b>软件包管理器</b></sub>
+      <sub><b>Package Manager</b></sub>
     </td>
     <td align="center">
-      <img src="screenshots/zh/interactive_terminal.png" width="400" alt="交互式终端">
+      <img src="screenshots/en/interactive_terminal.png" width="400" alt="Interactive Terminal">
       <br>
-      <sub><b>交互式终端</b></sub>
+      <sub><b>Interactive Terminal</b></sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="screenshots/zh/control_editor.png" width="400" alt="Control文件编辑器">
+      <img src="screenshots/en/control_editor.png" width="400" alt="Control File Editor">
       <br>
-      <sub><b>Control文件编辑器</b></sub>
+      <sub><b>Control File Editor</b></sub>
     </td>
     <td align="center">
-      <img src="screenshots/zh/package_history.png" width="400" alt="软件包版本选择">
+      <img src="screenshots/en/package_history.png" width="400" alt="Package Version Selection">
       <br>
-      <sub><b>软件包版本选择</b></sub>
+      <sub><b>Package Version Selection</b></sub>
     </td>
     <td align="center">
-      <img src="screenshots/zh/repo_manager.png" width="400" alt="仓库管理器">
+      <img src="screenshots/en/repo_manager.png" width="400" alt="Repository Manager">
       <br>
-      <sub><b>仓库管理器</b></sub>
+      <sub><b>Repository Manager</b></sub>
     </td>
   </tr>
 </table>
@@ -91,15 +92,16 @@
 - **Linux**: Ubuntu 18.04+ or equivalent
 - **Dependencies**: dpkg-deb (for .deb operations)
 
-### Quick Install
+### Download and Installation
 
-#### Option 1: Download Standalone App (Recommended)
-1. Download `SimpleTweakEditor-macOS-standalone.zip` from [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
-2. Extract and move SimpleTweakEditor.app to Applications
-3. Install dpkg: `brew install dpkg`
-4. Right-click and select "Open" on first launch
+#### Download Pre-built Releases
+- **macOS**: 
+  - **Recommended**: Download standalone version `SimpleTweakEditor.app` (includes all dependencies, ~31MB)
+  - **Alternative**: Download standard `.app` or `.dmg` installer (requires Python environment)
+- **Linux**: Download the corresponding executable file
+- Download from [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 
-#### Option 2: Run from Source
+#### Run from Source
 ```bash
 # Clone repository
 git clone https://github.com/Evil0ctal/SimpleTweakEditor.git
@@ -111,6 +113,15 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Install dependencies
+pip install -r requirements.txt
+
+# macOS users install dpkg
+brew install dpkg
+
+# Linux users install dpkg
+sudo apt-get install dpkg
 
 # Run application
 python main.py
@@ -142,17 +153,49 @@ python main.py --batch --unpack "*.deb"
 python main.py --lang en  # or 'zh' for Chinese
 ```
 
-## 🛠️ Building
+## 🔨 Building the Application
 
-### Build Standalone macOS App
+### Build macOS .app
+
 ```bash
+# Enter build scripts directory
 cd build_scripts
+
+# Build standalone app bundle (recommended)
+# Includes all Python dependencies, users don't need Python or PyQt6
 python3 build_macos_app_standalone.py
+
+# Or build standard app bundle
+# Requires Python and dependencies on user's system
+python3 build_macos_app.py
+
+# App will be created at:
+# dist/SimpleTweakEditor.app
 ```
 
-### Build for Distribution
+### Build for Linux
+
 ```bash
+# Create AppImage structure
+./build_scripts/build_linux_appimage.sh
+
+# Build single file with PyInstaller
+python3 build_scripts/build_release.py
+```
+
+### Build All Versions
+
+```bash
+# Auto build for all platforms
 ./build_scripts/prepare_release.sh
+
+# Builds will be organized in:
+# releases/v1.0.0/
+#   ├── macOS/
+#   │   ├── SimpleTweakEditor.app
+#   │   └── SimpleTweakEditor-1.0.0-macOS.dmg
+#   └── Linux/
+#       └── SimpleTweakEditor-1.0.0-Linux
 ```
 
 ## 📚 Documentation
@@ -213,27 +256,111 @@ A: Install Python dependencies: `pip3 install PyQt6 Pillow`
 
 For detailed release notes, see [RELEASE_NOTES_EN.md](RELEASE_NOTES_EN.md)
 
+## 📁 Project Structure
+
+```
+SimpleTweakEditor/
+├── main.py                    # Main entry point
+├── requirements.txt           # Python dependencies
+├── README.md                 # Chinese documentation
+├── README_EN.md             # This file
+├── RELEASE_NOTES.md         # Release notes (Chinese)
+├── RELEASE_NOTES_EN.md      # Release notes (English)
+├── LICENSE                   # Apache 2.0 License
+├── docs/                     # Documentation directory
+│   ├── PROJECT_STRUCTURE.md  # Detailed architecture docs
+│   ├── QUICK_START.md        # Quick start guide
+│   ├── FEATURE_ROADMAP.md    # Feature roadmap
+│   ├── REPO_MANAGER_GUIDE.md # Repository manager guide
+│   └── THEMES.md             # Theme documentation
+│
+├── src/                      # Source code
+│   ├── core/                 # Core modules
+│   │   ├── app.py           # Main application logic
+│   │   ├── config.py        # Configuration management
+│   │   ├── events.py        # Event definitions
+│   │   └── repo_manager.py  # Repository management
+│   │
+│   ├── ui/                   # User interface
+│   │   ├── main_window.py   # Main window
+│   │   ├── control_editor.py # Control file editor
+│   │   ├── about_dialog_improved.py # About dialog
+│   │   ├── interactive_terminal.py # Interactive terminal
+│   │   ├── package_browser_dialog.py # Package browser
+│   │   ├── package_manager_widget.py # Package manager
+│   │   ├── repo_manager_dialog.py # Repository manager dialog
+│   │   └── styles.py        # Style management
+│   │
+│   ├── workers/              # Background tasks
+│   │   ├── command_thread.py # Command execution
+│   │   └── download_thread.py # Download tasks
+│   │
+│   ├── utils/                # Utilities
+│   │   ├── file_operations.py # File operations
+│   │   └── system_utils.py  # System utilities
+│   │
+│   ├── localization/        # Localization
+│   │   ├── language_manager.py # Language manager
+│   │   └── translations.py  # Translation data
+│   │
+│   └── resources/           # Resources
+│       └── default_repositories.json # Default repositories
+│
+├── build_scripts/            # Build scripts
+│   ├── build_macos_app.py   # macOS standard .app build
+│   ├── build_macos_app_standalone.py # macOS standalone .app build
+│   ├── build_linux_appimage.sh # Linux AppImage script
+│   ├── prepare_release.sh   # Release preparation script
+│   └── clean_all.sh        # Clean all build files
+│
+└── releases/                # Release files
+    └── v1.0.0/             # Version release directory
+```
+
+## 💻 Development Guide
+
+### Code Quality
+- Follows PEP 8 standards
+- Type hints (coming soon)
+- Comprehensive error handling
+- Security-first design philosophy
+
+### Adding New Features
+1. File operations go in `utils/file_operations.py`
+2. UI components go in the `ui/` directory
+3. Background tasks inherit from `CommandThread` class
+4. Translations go in `translations.py`
+
+### Contributing Guidelines
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Create a Pull Request
+
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Thanks to all contributors and testers
-- PyQt6 for the excellent GUI framework
-- The iOS jailbreak community for inspiration
+- PyQt6 development team
+- dpkg maintainers
+- All contributors
 
-## 📞 Support
+## 📞 Contact
 
-- **Issues**: [GitHub Issues](https://github.com/Evil0ctal/SimpleTweakEditor/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Evil0ctal/SimpleTweakEditor/discussions)
-- **Email**: evil0ctal@gmail.com
+- **Author**: Evil0ctal
+- **GitHub**: https://github.com/Evil0ctal
+- **Project**: https://github.com/Evil0ctal/SimpleTweakEditor
 
 ---
 
 <div align="center">
 
 **Note**: This tool is for legitimate iOS development and debugging purposes only. Please comply with relevant laws and regulations.
+
+---
 
 Made with ❤️ by [Evil0ctal](https://github.com/Evil0ctal)
 

@@ -51,7 +51,7 @@
       <sub><b>软件包版本选择</b></sub>
     </td>
     <td align="center">
-      <img src="screenshots/zh/repo_manager.png" width="400" alt="仓库管理器">
+      <img src="screenshots/zh/repo_manager.png" width="400" alt="软件源管理器">
       <br>
       <sub><b>仓库管理器</b></sub>
     </td>
