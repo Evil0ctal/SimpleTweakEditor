@@ -11,6 +11,7 @@ from datetime import datetime
 import platform
 
 from .system_utils import set_debian_permissions, get_package_info_from_control, suggest_output_filename
+from .dpkg_deb import dpkg_deb
 
 
 def find_dpkg_deb():
@@ -68,6 +69,62 @@ def find_dpkg_deb():
     return None
 
 
+def find_wsl_dpkg_deb():
+    """
+    在Windows上通过WSL查找dpkg-deb
+    
+    Returns:
+        tuple: (wsl_path, dpkg_deb_path) 如果找到，否则 (None, None)
+    """
+    if platform.system() != "Windows":
+        return None, None
+    
+    try:
+        # 检查WSL是否可用
+        result = subprocess.run(["wsl", "--status"], 
+                              capture_output=True, 
+                              text=True, 
+                              timeout=5)
+        if result.returncode != 0:
+            return None, None
+        
+        # 尝试在WSL中查找dpkg-deb
+        result = subprocess.run(["wsl", "which", "dpkg-deb"], 
+                              capture_output=True, 
+                              text=True, 
+                              timeout=5)
+        
+        if result.returncode == 0 and result.stdout.strip():
+            return "wsl", result.stdout.strip()
+    except:
+        pass
+    
+    return None, None
+
+
+def get_deb_handler_priority():
+    """
+    根据平台返回处理器优先级列表
+    
+    Returns:
+        list: 处理器类型列表，按优先级排序
+    """
+    system = platform.system()
+    
+    if system == "Darwin":  # macOS
+        # macOS: 优先使用原生dpkg-deb，然后Python实现
+        return ["dpkg-native", "python"]
+    elif system == "Linux":
+        # Linux: 优先使用原生dpkg-deb，然后Python实现
+        return ["dpkg-native", "python"]
+    elif system == "Windows":
+        # Windows: 优先使用Python实现，然后WSL，最后原生dpkg
+        return ["python", "dpkg-wsl", "dpkg-native"]
+    else:
+        # 其他平台: 尝试所有方法
+        return ["python", "dpkg-native"]
+
+
 def unpack_deb_file(deb_path, output_dir):
     """
     解包.deb文件
@@ -103,56 +160,150 @@ def unpack_deb_file(deb_path, output_dir):
         # 创建目标目录
         os.makedirs(target_dir, exist_ok=True)
 
-        # 查找dpkg-deb
-        dpkg_deb = find_dpkg_deb()
-        if not dpkg_deb:
-            return False, "'dpkg-deb' tool not installed or not in PATH.\nPlease install dpkg to use this feature.\nOn macOS: brew install dpkg\nOn Linux: sudo apt-get install dpkg", None
+        # 获取处理器优先级
+        handlers = get_deb_handler_priority()
+        last_error = None
         
-        # 提取文件系统内容
-        result1 = subprocess.run(
-            [dpkg_deb, "-x", deb_path, target_dir],
-            capture_output=True, text=True
-        )
+        for handler in handlers:
+            if handler == "python":
+                # 尝试使用纯Python处理器
+                try:
+                    success = dpkg_deb.unpack(deb_path, target_dir)
+                    if success:
+                        # 设置DEBIAN目录权限
+                        debian_dir = os.path.join(target_dir, "DEBIAN")
+                        permissions_set, permission_errors = set_debian_permissions(debian_dir)
+                        
+                        output_msg = "Successfully unpacked using native Python handler\n"
+                        # 添加权限设置信息
+                        for perm_msg in permissions_set:
+                            output_msg += perm_msg + "\n"
+                        if permission_errors:
+                            for error in permission_errors:
+                                output_msg += f"Warning: {error}\n"
+                        
+                        return True, output_msg, target_dir
+                except Exception as e:
+                    last_error = f"Python handler failed: {str(e)}"
+                    continue
+                    
+            elif handler == "dpkg-native":
+                # 尝试使用原生dpkg-deb
+                dpkg_deb_path = find_dpkg_deb()
+                if dpkg_deb_path:
+                    try:
+                        # 提取文件系统内容
+                        result1 = subprocess.run(
+                            [dpkg_deb_path, "-x", deb_path, target_dir],
+                            capture_output=True, text=True
+                        )
 
-        # 提取control文件到DEBIAN/
-        debian_dir = os.path.join(target_dir, "DEBIAN")
-        os.makedirs(debian_dir, exist_ok=True)
-        result2 = subprocess.run(
-            [dpkg_deb, "-e", deb_path, debian_dir],
-            capture_output=True, text=True
-        )
+                        # 提取control文件到DEBIAN/
+                        debian_dir = os.path.join(target_dir, "DEBIAN")
+                        os.makedirs(debian_dir, exist_ok=True)
+                        result2 = subprocess.run(
+                            [dpkg_deb_path, "-e", deb_path, debian_dir],
+                            capture_output=True, text=True
+                        )
 
-        # 检查解包结果
-        if result1.returncode != 0 or result2.returncode != 0:
-            error_msg = ""
-            if result1.stderr:
-                error_msg += result1.stderr.strip() + "\n"
-            if result2.stderr:
-                error_msg += result2.stderr.strip() + "\n"
-            return False, error_msg, target_dir
+                        # 检查解包结果
+                        if result1.returncode == 0 and result2.returncode == 0:
+                            # 设置DEBIAN目录权限
+                            permissions_set, permission_errors = set_debian_permissions(debian_dir)
 
-        # 设置DEBIAN目录权限
-        permissions_set, permission_errors = set_debian_permissions(debian_dir)
+                            # 收集输出消息
+                            output_msg = f"Successfully unpacked using native dpkg-deb ({dpkg_deb_path})\n"
+                            if result1.stdout:
+                                output_msg += result1.stdout.strip() + "\n"
+                            if result2.stdout:
+                                output_msg += result2.stdout.strip() + "\n"
 
-        # 收集输出消息
-        output_msg = ""
-        if result1.stdout:
-            output_msg += result1.stdout.strip() + "\n"
-        if result2.stdout:
-            output_msg += result2.stdout.strip() + "\n"
+                            # 添加权限设置信息
+                            for perm_msg in permissions_set:
+                                output_msg += perm_msg + "\n"
 
-        # 添加权限设置信息
-        for perm_msg in permissions_set:
-            output_msg += perm_msg + "\n"
+                            if permission_errors:
+                                for error in permission_errors:
+                                    output_msg += f"Warning: {error}\n"
 
-        if permission_errors:
-            for error in permission_errors:
-                output_msg += f"Warning: {error}\n"
+                            return True, output_msg, target_dir
+                        else:
+                            error_msg = ""
+                            if result1.stderr:
+                                error_msg += result1.stderr.strip() + "\n"
+                            if result2.stderr:
+                                error_msg += result2.stderr.strip() + "\n"
+                            last_error = f"dpkg-deb failed: {error_msg}"
+                    except Exception as e:
+                        last_error = f"dpkg-deb error: {str(e)}"
+                else:
+                    last_error = "dpkg-deb not found"
+                    
+            elif handler == "dpkg-wsl":
+                # 尝试使用WSL中的dpkg-deb
+                wsl_path, dpkg_path = find_wsl_dpkg_deb()
+                if wsl_path and dpkg_path:
+                    try:
+                        # 转换Windows路径为WSL路径
+                        wsl_deb_path = subprocess.run(
+                            ["wsl", "wslpath", "-u", deb_path],
+                            capture_output=True, text=True
+                        ).stdout.strip()
+                        
+                        wsl_target_dir = subprocess.run(
+                            ["wsl", "wslpath", "-u", target_dir],
+                            capture_output=True, text=True
+                        ).stdout.strip()
+                        
+                        # 提取文件系统内容
+                        result1 = subprocess.run(
+                            ["wsl", dpkg_path, "-x", wsl_deb_path, wsl_target_dir],
+                            capture_output=True, text=True
+                        )
 
-        return True, output_msg, target_dir
+                        # 提取control文件到DEBIAN/
+                        debian_dir = os.path.join(target_dir, "DEBIAN")
+                        os.makedirs(debian_dir, exist_ok=True)
+                        wsl_debian_dir = subprocess.run(
+                            ["wsl", "wslpath", "-u", debian_dir],
+                            capture_output=True, text=True
+                        ).stdout.strip()
+                        
+                        result2 = subprocess.run(
+                            ["wsl", dpkg_path, "-e", wsl_deb_path, wsl_debian_dir],
+                            capture_output=True, text=True
+                        )
 
-    except FileNotFoundError:
-        return False, "'dpkg-deb' tool not installed or not in PATH.\nPlease install dpkg to use this feature.", None
+                        if result1.returncode == 0 and result2.returncode == 0:
+                            # 设置DEBIAN目录权限
+                            permissions_set, permission_errors = set_debian_permissions(debian_dir)
+
+                            output_msg = "Successfully unpacked using WSL dpkg-deb\n"
+                            return True, output_msg, target_dir
+                        else:
+                            error_msg = ""
+                            if result1.stderr:
+                                error_msg += result1.stderr.strip() + "\n"
+                            if result2.stderr:
+                                error_msg += result2.stderr.strip() + "\n"
+                            last_error = f"WSL dpkg-deb failed: {error_msg}"
+                    except Exception as e:
+                        last_error = f"WSL error: {str(e)}"
+                else:
+                    last_error = "WSL or dpkg-deb not available in WSL"
+        
+        # 如果所有方法都失败了
+        error_msg = "Failed to unpack .deb file. Tried methods:\n"
+        error_msg += f"- {last_error or 'All handlers failed'}\n"
+        error_msg += "\nSuggestions:\n"
+        if platform.system() == "Windows":
+            error_msg += "- Install Windows Subsystem for Linux (WSL) with dpkg\n"
+            error_msg += "- Or wait for future updates with improved Windows support"
+        else:
+            error_msg += "- Install dpkg: brew install dpkg (macOS) or apt-get install dpkg (Linux)"
+        
+        return False, error_msg, None
+
     except Exception as e:
         return False, f"Exception during unpacking: {str(e)}", None
 
@@ -188,57 +339,138 @@ def pack_folder_to_deb(folder_path, output_path):
             temp_structure_file = structure_file + ".tmp"
             shutil.move(structure_file, temp_structure_file)
 
-        # 查找dpkg-deb
-        dpkg_deb = find_dpkg_deb()
-        if not dpkg_deb:
-            # 恢复文件（如果需要）
-            if temp_structure_file and os.path.exists(temp_structure_file):
-                shutil.move(temp_structure_file, structure_file)
-            return False, "'dpkg-deb' tool not installed or not in PATH.\nPlease install dpkg to use this feature.\nOn macOS: brew install dpkg\nOn Linux: sudo apt-get install dpkg"
+        # 获取处理器优先级
+        handlers = get_deb_handler_priority()
+        last_error = None
         
-        # 设置DEBIAN目录权限
+        # 预先设置权限
         permissions_set, permission_errors = set_debian_permissions(debian_dir)
+        
+        for handler in handlers:
+            if handler == "python":
+                # 尝试使用纯Python处理器
+                try:
+                    success = dpkg_deb.pack(folder_path, output_path)
+                    if success:
+                        output_msg = "Successfully packed using native Python handler\n"
+                        # 添加权限设置信息
+                        for perm_msg in permissions_set:
+                            output_msg += perm_msg + "\n"
+                        if permission_errors:
+                            for error in permission_errors:
+                                output_msg += f"Warning: {error}\n"
+                        
+                        # 恢复DIRECTORY_STRUCTURE.md文件
+                        if temp_structure_file and os.path.exists(temp_structure_file):
+                            shutil.move(temp_structure_file, structure_file)
+                            
+                        return True, output_msg
+                except Exception as e:
+                    last_error = f"Python handler failed: {str(e)}"
+                    continue
+                    
+            elif handler == "dpkg-native":
+                # 尝试使用原生dpkg-deb
+                dpkg_deb_path = find_dpkg_deb()
+                if dpkg_deb_path:
+                    try:
+                        # 构建dpkg-deb命令
+                        build_cmd = [dpkg_deb_path, "--root-owner-group", "-b", folder_path, output_path]
 
-        # 构建dpkg-deb命令
-        build_cmd = [dpkg_deb, "--root-owner-group", "-b", folder_path, output_path]
+                        # 执行打包命令
+                        result = subprocess.run(build_cmd, capture_output=True, text=True)
 
-        # 执行打包命令
-        result = subprocess.run(build_cmd, capture_output=True, text=True)
+                        if result.returncode == 0:
+                            # 收集输出消息
+                            output_msg = f"Successfully packed using native dpkg-deb ({dpkg_deb_path})\n"
+                            if result.stdout:
+                                output_msg += result.stdout.strip() + "\n"
+                            if result.stderr:
+                                output_msg += result.stderr.strip() + "\n"
 
-        if result.returncode != 0:
-            error_msg = ""
-            if result.stdout:
-                error_msg += result.stdout.strip() + "\n"
-            if result.stderr:
-                error_msg += result.stderr.strip() + "\n"
-            return False, error_msg
+                            # 添加权限设置信息
+                            for perm_msg in permissions_set:
+                                output_msg += perm_msg + "\n"
 
-        # 收集输出消息
-        output_msg = ""
-        if result.stdout:
-            output_msg += result.stdout.strip() + "\n"
-        if result.stderr:
-            output_msg += result.stderr.strip() + "\n"
+                            if permission_errors:
+                                for error in permission_errors:
+                                    output_msg += f"Warning: {error}\n"
 
-        # 添加权限设置信息
-        for perm_msg in permissions_set:
-            output_msg += perm_msg + "\n"
+                            # 恢复DIRECTORY_STRUCTURE.md文件
+                            if temp_structure_file and os.path.exists(temp_structure_file):
+                                shutil.move(temp_structure_file, structure_file)
 
-        if permission_errors:
-            for error in permission_errors:
-                output_msg += f"Warning: {error}\n"
+                            return True, output_msg
+                        else:
+                            error_msg = ""
+                            if result.stdout:
+                                error_msg += result.stdout.strip() + "\n"
+                            if result.stderr:
+                                error_msg += result.stderr.strip() + "\n"
+                            last_error = f"dpkg-deb failed: {error_msg}"
+                    except Exception as e:
+                        last_error = f"dpkg-deb error: {str(e)}"
+                else:
+                    last_error = "dpkg-deb not found"
+                    
+            elif handler == "dpkg-wsl":
+                # 尝试使用WSL中的dpkg-deb
+                wsl_path, dpkg_path = find_wsl_dpkg_deb()
+                if wsl_path and dpkg_path:
+                    try:
+                        # 转换Windows路径为WSL路径
+                        wsl_folder_path = subprocess.run(
+                            ["wsl", "wslpath", "-u", folder_path],
+                            capture_output=True, text=True
+                        ).stdout.strip()
+                        
+                        wsl_output_path = subprocess.run(
+                            ["wsl", "wslpath", "-u", output_path],
+                            capture_output=True, text=True
+                        ).stdout.strip()
+                        
+                        # 构建dpkg-deb命令
+                        result = subprocess.run(
+                            ["wsl", dpkg_path, "--root-owner-group", "-b", wsl_folder_path, wsl_output_path],
+                            capture_output=True, text=True
+                        )
 
-        # 恢复DIRECTORY_STRUCTURE.md文件
+                        if result.returncode == 0:
+                            output_msg = "Successfully packed using WSL dpkg-deb\n"
+                            
+                            # 恢复DIRECTORY_STRUCTURE.md文件
+                            if temp_structure_file and os.path.exists(temp_structure_file):
+                                shutil.move(temp_structure_file, structure_file)
+                                
+                            return True, output_msg
+                        else:
+                            error_msg = ""
+                            if result.stdout:
+                                error_msg += result.stdout.strip() + "\n"
+                            if result.stderr:
+                                error_msg += result.stderr.strip() + "\n"
+                            last_error = f"WSL dpkg-deb failed: {error_msg}"
+                    except Exception as e:
+                        last_error = f"WSL error: {str(e)}"
+                else:
+                    last_error = "WSL or dpkg-deb not available in WSL"
+        
+        # 恢复文件（如果所有方法都失败）
         if temp_structure_file and os.path.exists(temp_structure_file):
             shutil.move(temp_structure_file, structure_file)
+            
+        # 如果所有方法都失败了
+        error_msg = "Failed to pack .deb file. Tried methods:\n"
+        error_msg += f"- {last_error or 'All handlers failed'}\n"
+        error_msg += "\nSuggestions:\n"
+        if platform.system() == "Windows":
+            error_msg += "- Install Windows Subsystem for Linux (WSL) with dpkg\n"
+            error_msg += "- Or wait for future updates with improved Windows support"
+        else:
+            error_msg += "- Install dpkg: brew install dpkg (macOS) or apt-get install dpkg (Linux)"
+        
+        return False, error_msg
 
-        return True, output_msg
-
-    except FileNotFoundError:
-        # 恢复文件（如果打包失败）
-        if temp_structure_file and os.path.exists(temp_structure_file):
-            shutil.move(temp_structure_file, structure_file)
-        return False, "'dpkg-deb' tool not installed or not in PATH.\nPlease install dpkg to use this feature."
     except Exception as e:
         # 恢复文件（如果打包失败）
         if temp_structure_file and os.path.exists(temp_structure_file):

@@ -7,3 +7,4 @@ Utilities package for SimpleTweakEditor
 
 from .file_operations import *
 from .system_utils import *
+from .dpkg_deb import dpkg_deb, deb_handler  # deb_handler for backward compatibility
