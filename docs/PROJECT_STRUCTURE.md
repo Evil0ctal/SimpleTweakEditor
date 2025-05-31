@@ -1,6 +1,6 @@
 # SimpleTweakEditor 项目结构说明
 
-*最后更新: 2025-05-30*
+*最后更新: 2025-05-31*
 
 ## 📁 目录结构
 
@@ -46,6 +46,7 @@ SimpleTweakEditor/
 │   │   ├── 📄 __init__.py
 │   │   ├── 📄 file_operations.py # 文件操作（安全增强）
 │   │   ├── 📄 dpkg_deb.py       # 跨平台dpkg实现 🆕
+│   │   ├── 📄 terminal_dpkg_wrapper.py # 终端dpkg命令包装器 🆕
 │   │   └── 📄 system_utils.py  # 系统工具
 │   │
 │   ├── 📂 localization/         # 多语言支持
@@ -77,6 +78,7 @@ SimpleTweakEditor/
 │   └── 📄 icon_*.png           # 各种尺寸的图标
 │
 ├── 📄 build.py                 # 通用构建脚本 🆕
+├── 📂 build_scripts/          # 构建脚本目录（已弃用）
 │
 └── 📂 releases/                 # 发布文件目录
     └── 📂 v1.0.*/              # 各版本发布文件
@@ -106,6 +108,7 @@ SimpleTweakEditor/
 #### 4. **utils/** - 工具函数
 - `file_operations.py`: 安全的文件操作，防止路径遍历
 - `dpkg_deb.py`: 纯Python实现的dpkg功能，支持Windows 🆕
+- `terminal_dpkg_wrapper.py`: 终端dpkg命令包装器，解决跨平台问题 🆕
 - `system_utils.py`: 系统相关工具，如dpkg-deb检测
 
 #### 5. **localization/** - 国际化
@@ -174,9 +177,9 @@ python main.py
 python build.py
 ```
 
-## 🪟 Windows支持实现 (v1.0.2新增)
+## 🪟 跨平台支持实现 (v1.0.2增强)
 
-### dpkg_deb.py 模块
+### 1. dpkg_deb.py 模块
 纯Python实现的dpkg功能，解决Windows平台依赖问题：
 
 #### 核心类
@@ -197,6 +200,22 @@ Windows环境下自动设置正确的Unix权限：
 - 普通文件: 0644
 - 目录: 0755
 
+### 2. terminal_dpkg_wrapper.py 模块
+交互式终端的dpkg命令包装器：
+
+#### 主要功能
+- ✅ 自动检测dpkg可用性
+- ✅ Windows上自动调用Python实现
+- ✅ 处理which dpkg命令
+- ✅ 统一命令输出格式
+
+#### 支持的命令
+- `dpkg -l`: 列出已安装包
+- `dpkg-deb -x`: 解压.deb文件
+- `dpkg-deb -b`: 构建.deb文件
+- `dpkg-deb -I`: 查看包信息
+- `dpkg-deb -c`: 列出包内容
+
 ## 📝 编码规范
 
 ### Python代码规范
@@ -204,6 +223,22 @@ Windows环境下自动设置正确的Unix权限：
 - 使用类型提示（准备中）
 - 完整的docstring文档
 - 异常处理和日志记录
+
+### 文件头部格式 (v1.0.2统一)
+所有Python文件都使用统一的头部格式：
+```python
+# -*- coding: utf-8 -*-
+"""
+创建时间: YYYY-MM-DD
+作者: Evil0ctal
+
+中文介绍:
+[模块的中文说明]
+
+英文介绍:
+[Module description in English]
+"""
+```
 
 ### 命名规范
 - 类名：PascalCase
