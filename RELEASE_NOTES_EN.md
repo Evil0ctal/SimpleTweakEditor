@@ -8,9 +8,9 @@ English | [中文](RELEASE_NOTES.md)
 
 ## 🪟 v1.0.2 (2025-05-30)
 
-### Windows Platform Support & Cross-Platform Enhancement
+### Windows Platform Support & Interactive Terminal Enhancement
 
-This release's major highlight is the addition of full Windows platform support, solving the dpkg dependency issue on Windows through a pure Python implementation.
+This release's major highlight is the addition of full Windows platform support, solving the dpkg dependency issue on Windows through a pure Python implementation, and fixing critical issues with the interactive terminal across platforms.
 
 #### 🆕 Major New Features
 - **Full Windows Support** - Provides complete functionality on Windows platform, identical to macOS/Linux
@@ -18,13 +18,25 @@ This release's major highlight is the addition of full Windows platform support,
 - **Cross-Platform Permission Handling** - Smart Unix file permission mapping in Windows environment
 - **Multi-Compression Support** - Support for gz, xz, lzma and other compression formats in .deb files
 
+#### 🐛 Interactive Terminal Fixes
+- **Interactive Terminal dpkg Support** - Fixed "dpkg not found" errors on Linux/macOS
+- **Windows Terminal Integration** - Interactive terminal now uses built-in Python dpkg implementation on Windows
+- **Chinese Encoding Fix** - Resolved Chinese character display issues in Windows terminal
+- **Platform-Specific Commands** - Provided adapted quick commands for Windows
+
 #### 🔧 Technical Improvements
 - **AR Archive Format Handling** - Complete AR archive read/write functionality implementation
 - **Secure Path Validation** - Enhanced protection against path traversal attacks
 - **Smart Permission Mapping** - Automatic executable permission setting for DEBIAN scripts and bin directory files on Windows
 - **File Integrity Verification** - Enhanced .deb package validation and testing capabilities
+- **Smart dpkg Command Interception** - Automatically detects and handles dpkg-deb commands
+- **Cross-Platform Command Support** - Platform-specific quick commands for better UX
+- **Multi-Encoding Support** - Windows terminal supports UTF-8, GBK, GB2312 encodings
+- **Environment Optimization** - Proper environment variable setup for Windows terminal
 
-#### 📦 Compatibility Enhancements
+#### 📦 Build System & Compatibility
+- **Universal Build System** - New `build.py` one-click build script, auto-detects platform and builds appropriate format
+- **Legacy Scripts Removal** - Removed `build_scripts` directory and all legacy build scripts
 - **Backward Compatibility** - Maintains full compatibility with existing code
 - **Multi-Platform Build** - Updated build scripts to support cross-platform releases
 - **Documentation Updates** - Updated README and release notes to reflect Windows support
@@ -34,6 +46,10 @@ This release's major highlight is the addition of full Windows platform support,
 - Supports extract, build, info, contents listing, and verify operations
 - Automatic detection and setting of appropriate Unix permissions on Windows (755 for executables, 644 for regular files)
 - Support for lzma compression format, compatible with older iOS package formats
+- Added `terminal_dpkg_wrapper.py` module for cross-platform dpkg command support
+- Improved command handling logic in interactive terminal
+- Enhanced terminal output encoding handling
+- Optimized command list for platform adaptation
 
 ---
 

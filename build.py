@@ -14,13 +14,11 @@ Version: 1.0.0
 """
 
 import os
-import sys
 import platform
+import plistlib
 import shutil
 import subprocess
-import json
-import plistlib
-import tempfile
+import sys
 import zipfile
 from pathlib import Path
 
@@ -41,7 +39,8 @@ class UniversalBuilder:
             from version import APP_VERSION
             self.version = APP_VERSION
         except ImportError:
-            self.version = "1.0.2"
+            # 如果无法导入版本模块，则抛出错误
+            raise ImportError("Version module not found. Please ensure 'version.py' exists in 'src' directory.")
         
         # 平台特定配置
         self.platform_configs = {
@@ -122,16 +121,24 @@ class UniversalBuilder:
         """检查构建依赖"""
         self.log("Checking dependencies...", "📦")
         
-        required_packages = ["pyinstaller", "PyQt6", "Pillow"]
+        # 包名和实际导入名的映射
+        packages_map = {
+            "pyinstaller": "PyInstaller",
+            "PyQt6": "PyQt6",
+            "Pillow": "PIL",
+            "httpx": "httpx",
+            "qt-material": "qt_material"
+        }
+        
         missing_packages = []
         
-        for package in required_packages:
+        for package_name, import_name in packages_map.items():
             try:
-                __import__(package.lower().replace("-", "_"))
-                self.log(f"✓ {package}")
+                __import__(import_name)
+                self.log(f"✓ {package_name}")
             except ImportError:
-                missing_packages.append(package)
-                self.log(f"✗ {package}", "❌")
+                missing_packages.append(package_name)
+                self.log(f"✗ {package_name}", "❌")
                 
         if missing_packages:
             self.log("Installing missing dependencies...", "📥")
@@ -153,11 +160,15 @@ class UniversalBuilder:
             "--noconfirm",
             "--add-data", f"icons{self.config['separator']}icons",
             "--add-data", f"src{self.config['separator']}src",
+            "--add-data", f"src/resources{self.config['separator']}src/resources",
             "--hidden-import", "PyQt6.QtCore",
             "--hidden-import", "PyQt6.QtGui", 
             "--hidden-import", "PyQt6.QtWidgets",
             "--hidden-import", "PIL",
             "--hidden-import", "PIL.Image",
+            "--hidden-import", "httpx",
+            "--hidden-import", "qt_material",
+            "--hidden-import", "qt_material.resources",
         ]
         
         # 添加图标

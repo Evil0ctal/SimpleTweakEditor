@@ -225,15 +225,30 @@ A: Install Python dependencies: `pip3 install PyQt6 Pillow`
 
 ## 📝 Changelog
 
-### 🆕 v1.0.2 (2025-05-30) - Full Windows Support
-**Major Update: Complete Windows Support!**
+### 🆕 v1.0.2 (2025-05-30) - Full Windows Support & Terminal Enhancement
+**Major Update: Complete Windows Support and Interactive Terminal Fixes!**
 - 🪟 **Native Windows Support**
   - Pure Python dpkg implementation, no WSL or Cygwin needed
   - Full Windows 10/11 compatibility
   - Automatic path separator and permission handling
+- 🐛 **Interactive Terminal Fixes**
+  - Fixed "dpkg not found" errors on Linux/macOS
+  - Interactive terminal now uses built-in Python dpkg implementation on Windows
+  - Resolved Chinese character display issues in Windows terminal
+  - Provided adapted quick commands for Windows
 - 🔧 **Cross-Platform .deb Engine**
   - Complete AR archive format implementation
   - All compression formats supported (gz/xz/lzma)
+  - Smart Unix permission preservation
+- 📦 **Universal Build System**
+  - New `build.py` one-click build script
+  - Auto-detects platform and builds appropriate format
+  - Creates versioned zip archives for easy distribution
+  - Removed build_scripts directory, unified to use build.py
+- 🛡️ **Security Enhancements**
+  - Improved path traversal protection
+  - Enhanced package integrity verification
+  - File size limits to prevent DoS
   - Smart Unix permission preservation
 - 📦 **Universal Build System**
   - New `build.py` one-click build script

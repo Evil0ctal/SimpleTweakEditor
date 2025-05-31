@@ -283,12 +283,17 @@ python build.py
 
 ## 📋 更新日志
 
-### 🆕 v1.0.2 (2025-05-30) - Windows全面支持
-**重大更新：完整的Windows支持！**
+### 🆕 v1.0.2 (2025-05-30) - Windows全面支持与终端增强
+**重大更新：完整的Windows支持和交互式终端修复！**
 - 🪟 **Windows原生支持** 
   - 纯Python实现dpkg功能，无需WSL或Cygwin
   - 支持Windows 10/11所有版本
   - 自动处理路径分隔符和权限映射
+- 🐛 **交互式终端修复**
+  - 修复在Linux/macOS上找不到dpkg的问题
+  - 交互式终端现在在Windows上使用内置Python dpkg实现
+  - 解决Windows终端中文显示乱码问题
+  - 为Windows提供适配的快捷命令
 - 🔧 **跨平台.deb处理引擎**
   - 完整实现AR归档格式
   - 支持所有压缩格式（gz/xz/lzma）
@@ -297,6 +302,7 @@ python build.py
   - 新增`build.py`一键构建脚本
   - 自动检测平台并生成对应格式
   - 输出带版本号的压缩包，方便分发
+  - 移除build_scripts目录，统一使用build.py
 - 🛡️ **安全性增强**
   - 改进路径遍历保护
   - 增强包完整性验证

@@ -18,6 +18,9 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QFont, QTextCursor, QTextCharFormat, QColor, QAction
 
+# Import our dpkg wrapper for cross-platform support
+from ..utils.terminal_dpkg_wrapper import handle_dpkg_command, handle_which_dpkg
+
 
 class InteractiveTerminal(QWidget):
     """交互式终端组件"""
@@ -346,38 +349,72 @@ class InteractiveTerminal(QWidget):
     
     def get_general_commands(self):
         """获取通用命令"""
-        if self.lang_mgr:
-            return [
-                # 文件系统命令
-                (self.lang_mgr.get_text("cmd_list_files"), "ls -la"),
-                (self.lang_mgr.get_text("cmd_show_pwd"), "pwd"),
-                (self.lang_mgr.get_text("cmd_disk_usage"), "df -h"),
-                (self.lang_mgr.get_text("cmd_system_info"), "uname -a"),
-                # DEB 包管理命令
-                (self.lang_mgr.get_text("cmd_find_deb_files"), "find . -name '*.deb'"),
-                (self.lang_mgr.get_text("cmd_list_packages"), "dpkg -l | grep -E '^ii'"),
-                (self.lang_mgr.get_text("cmd_check_architecture"), "dpkg --print-architecture"),
-                (self.lang_mgr.get_text("cmd_list_repos"), "ls -la /etc/apt/sources.list.d/"),
-                # DEB 构建命令
-                (self.lang_mgr.get_text("cmd_check_dpkg_deb"), "which dpkg-deb"),
-                (self.lang_mgr.get_text("cmd_validate_control"), "cat DEBIAN/control 2>/dev/null || echo 'No control file found'"),
-            ]
+        # Windows 平台特殊命令
+        if sys.platform == "win32":
+            if self.lang_mgr:
+                return [
+                    # 文件系统命令
+                    (self.lang_mgr.get_text("cmd_list_files"), "dir /a"),
+                    (self.lang_mgr.get_text("cmd_show_pwd"), "cd"),
+                    (self.lang_mgr.get_text("cmd_disk_usage"), "wmic logicaldisk get size,freespace,caption"),
+                    (self.lang_mgr.get_text("cmd_system_info"), "systeminfo | findstr /B /C:\"OS Name\" /C:\"OS Version\""),
+                    # DEB 包管理命令
+                    (self.lang_mgr.get_text("cmd_find_deb_files"), "dir /s /b *.deb"),
+                    ("List .deb in current dir", "dir *.deb 2>nul || echo No .deb files found"),
+                    ("Check dpkg-deb (Python)", "which dpkg-deb"),
+                    # DEB 构建命令
+                    (self.lang_mgr.get_text("cmd_validate_control"), "type DEBIAN\\control 2>nul || echo No control file found"),
+                    ("Show directory tree", "tree /F"),
+                ]
+            else:
+                return [
+                    # File system commands
+                    ("List files", "dir /a"),
+                    ("Show current directory", "cd"),
+                    ("Disk usage", "wmic logicaldisk get size,freespace,caption"),
+                    ("System info", "systeminfo | findstr /B /C:\"OS Name\" /C:\"OS Version\""),
+                    # DEB package management
+                    ("Find .deb files", "dir /s /b *.deb"),
+                    ("List .deb in current dir", "dir *.deb 2>nul || echo No .deb files found"),
+                    ("Check dpkg-deb (Python)", "which dpkg-deb"),
+                    # DEB building commands
+                    ("Validate control file", "type DEBIAN\\control 2>nul || echo No control file found"),
+                    ("Show directory tree", "tree /F"),
+                ]
+        # Unix/Linux/macOS 平台命令
         else:
-            return [
-                # File system commands
-                ("List files", "ls -la"),
-                ("Show current directory", "pwd"),
-                ("Disk usage", "df -h"),
-                ("System info", "uname -a"),
-                # DEB package management
-                ("Find .deb files", "find . -name '*.deb'"),
-                ("List installed packages", "dpkg -l | grep -E '^ii'"),
-                ("Check architecture", "dpkg --print-architecture"),
-                ("List APT repositories", "ls -la /etc/apt/sources.list.d/"),
-                # DEB building commands
-                ("Check dpkg-deb", "which dpkg-deb"),
-                ("Validate control file", "cat DEBIAN/control 2>/dev/null || echo 'No control file found'"),
-            ]
+            if self.lang_mgr:
+                return [
+                    # 文件系统命令
+                    (self.lang_mgr.get_text("cmd_list_files"), "ls -la"),
+                    (self.lang_mgr.get_text("cmd_show_pwd"), "pwd"),
+                    (self.lang_mgr.get_text("cmd_disk_usage"), "df -h"),
+                    (self.lang_mgr.get_text("cmd_system_info"), "uname -a"),
+                    # DEB 包管理命令
+                    (self.lang_mgr.get_text("cmd_find_deb_files"), "find . -name '*.deb'"),
+                    (self.lang_mgr.get_text("cmd_list_packages"), "dpkg -l | grep -E '^ii'"),
+                    (self.lang_mgr.get_text("cmd_check_architecture"), "dpkg --print-architecture"),
+                    (self.lang_mgr.get_text("cmd_list_repos"), "ls -la /etc/apt/sources.list.d/"),
+                    # DEB 构建命令
+                    (self.lang_mgr.get_text("cmd_check_dpkg_deb"), "which dpkg-deb"),
+                    (self.lang_mgr.get_text("cmd_validate_control"), "cat DEBIAN/control 2>/dev/null || echo 'No control file found'"),
+                ]
+            else:
+                return [
+                    # File system commands
+                    ("List files", "ls -la"),
+                    ("Show current directory", "pwd"),
+                    ("Disk usage", "df -h"),
+                    ("System info", "uname -a"),
+                    # DEB package management
+                    ("Find .deb files", "find . -name '*.deb'"),
+                    ("List installed packages", "dpkg -l | grep -E '^ii'"),
+                    ("Check architecture", "dpkg --print-architecture"),
+                    ("List APT repositories", "ls -la /etc/apt/sources.list.d/"),
+                    # DEB building commands
+                    ("Check dpkg-deb", "which dpkg-deb"),
+                    ("Validate control file", "cat DEBIAN/control 2>/dev/null || echo 'No control file found'"),
+                ]
     
     def get_target_commands(self):
         """获取目标相关命令"""
@@ -387,53 +424,102 @@ class InteractiveTerminal(QWidget):
         
         commands = []
         
-        if is_file:
-            if is_deb:
-                # .deb 文件命令
-                if self.lang_mgr:
-                    commands.extend([
-                        (self.lang_mgr.get_text("cmd_view_deb_info"), f"dpkg-deb -I '{target}'"),
-                        (self.lang_mgr.get_text("cmd_list_deb_contents"), f"dpkg-deb -c '{target}'"),
-                        (self.lang_mgr.get_text("cmd_extract_deb"), f"dpkg-deb -x '{target}' ."),
-                        (self.lang_mgr.get_text("cmd_extract_control"), f"dpkg-deb -e '{target}' DEBIAN"),
-                    ])
+        # Windows 平台特殊处理
+        if sys.platform == "win32":
+            if is_file:
+                if is_deb:
+                    # .deb 文件命令 - 在Windows上使用Python实现
+                    if self.lang_mgr:
+                        commands.extend([
+                            (self.lang_mgr.get_text("cmd_view_deb_info"), f'dpkg-deb -I "{target}"'),
+                            (self.lang_mgr.get_text("cmd_list_deb_contents"), f'dpkg-deb -c "{target}"'),
+                            (self.lang_mgr.get_text("cmd_extract_deb"), f'dpkg-deb -x "{target}" .'),
+                            (self.lang_mgr.get_text("cmd_extract_control"), f'dpkg-deb -e "{target}" DEBIAN'),
+                        ])
+                    else:
+                        commands.extend([
+                            ("View package info", f'dpkg-deb -I "{target}"'),
+                            ("List package contents", f'dpkg-deb -c "{target}"'),
+                            ("Extract package", f'dpkg-deb -x "{target}" .'),
+                            ("Extract control files", f'dpkg-deb -e "{target}" DEBIAN'),
+                        ])
                 else:
-                    commands.extend([
-                        ("View package info", f"dpkg-deb -I '{target}'"),
-                        ("List package contents", f"dpkg-deb -c '{target}'"),
-                        ("Extract package", f"dpkg-deb -x '{target}' ."),
-                        ("Extract control files", f"dpkg-deb -e '{target}' DEBIAN"),
-                    ])
+                    # 普通文件命令
+                    if self.lang_mgr:
+                        commands.extend([
+                            (self.lang_mgr.get_text("cmd_view_file"), f'type "{target}"'),
+                            ("File size", f'dir "{target}"'),
+                        ])
+                    else:
+                        commands.extend([
+                            ("View file", f'type "{target}"'),
+                            ("File size", f'dir "{target}"'),
+                        ])
             else:
-                # 普通文件命令
+                # 目录命令
                 if self.lang_mgr:
                     commands.extend([
-                        (self.lang_mgr.get_text("cmd_view_file"), f"cat '{target}'"),
-                        (self.lang_mgr.get_text("cmd_file_info"), f"file '{target}'"),
-                        (self.lang_mgr.get_text("cmd_file_size"), f"ls -lh '{target}'"),
+                        (self.lang_mgr.get_text("cmd_list_directory"), f'dir "{target}" /a'),
+                        ("Directory tree", f'tree "{target}" /F'),
+                        ("Find control file", f'dir /s /b "{target}\\*control*"'),
+                        (self.lang_mgr.get_text("cmd_pack_deb"), f'dpkg-deb -b "{target}" output.deb'),
                     ])
                 else:
                     commands.extend([
-                        ("View file", f"cat '{target}'"),
-                        ("File info", f"file '{target}'"),
-                        ("File size", f"ls -lh '{target}'"),
+                        ("List directory", f'dir "{target}" /a'),
+                        ("Directory tree", f'tree "{target}" /F'),
+                        ("Find control file", f'dir /s /b "{target}\\*control*"'),
+                        ("Pack as .deb", f'dpkg-deb -b "{target}" output.deb'),
                     ])
+        # Unix/Linux/macOS 平台
         else:
-            # 目录命令
-            if self.lang_mgr:
-                commands.extend([
-                    (self.lang_mgr.get_text("cmd_list_directory"), f"ls -la '{target}'"),
-                    (self.lang_mgr.get_text("cmd_directory_size"), f"du -sh '{target}'"),
-                    (self.lang_mgr.get_text("cmd_find_control"), f"find '{target}' -name control"),
-                    (self.lang_mgr.get_text("cmd_pack_deb"), f"dpkg-deb -b '{target}' output.deb"),
-                ])
+            if is_file:
+                if is_deb:
+                    # .deb 文件命令
+                    if self.lang_mgr:
+                        commands.extend([
+                            (self.lang_mgr.get_text("cmd_view_deb_info"), f"dpkg-deb -I '{target}'"),
+                            (self.lang_mgr.get_text("cmd_list_deb_contents"), f"dpkg-deb -c '{target}'"),
+                            (self.lang_mgr.get_text("cmd_extract_deb"), f"dpkg-deb -x '{target}' ."),
+                            (self.lang_mgr.get_text("cmd_extract_control"), f"dpkg-deb -e '{target}' DEBIAN"),
+                        ])
+                    else:
+                        commands.extend([
+                            ("View package info", f"dpkg-deb -I '{target}'"),
+                            ("List package contents", f"dpkg-deb -c '{target}'"),
+                            ("Extract package", f"dpkg-deb -x '{target}' ."),
+                            ("Extract control files", f"dpkg-deb -e '{target}' DEBIAN"),
+                        ])
+                else:
+                    # 普通文件命令
+                    if self.lang_mgr:
+                        commands.extend([
+                            (self.lang_mgr.get_text("cmd_view_file"), f"cat '{target}'"),
+                            (self.lang_mgr.get_text("cmd_file_info"), f"file '{target}'"),
+                            (self.lang_mgr.get_text("cmd_file_size"), f"ls -lh '{target}'"),
+                        ])
+                    else:
+                        commands.extend([
+                            ("View file", f"cat '{target}'"),
+                            ("File info", f"file '{target}'"),
+                            ("File size", f"ls -lh '{target}'"),
+                        ])
             else:
-                commands.extend([
-                    ("List directory", f"ls -la '{target}'"),
-                    ("Directory size", f"du -sh '{target}'"),
-                    ("Find control file", f"find '{target}' -name control"),
-                    ("Pack as .deb", f"dpkg-deb -b '{target}' output.deb"),
-                ])
+                # 目录命令
+                if self.lang_mgr:
+                    commands.extend([
+                        (self.lang_mgr.get_text("cmd_list_directory"), f"ls -la '{target}'"),
+                        (self.lang_mgr.get_text("cmd_directory_size"), f"du -sh '{target}'"),
+                        (self.lang_mgr.get_text("cmd_find_control"), f"find '{target}' -name control"),
+                        (self.lang_mgr.get_text("cmd_pack_deb"), f"dpkg-deb -b '{target}' output.deb"),
+                    ])
+                else:
+                    commands.extend([
+                        ("List directory", f"ls -la '{target}'"),
+                        ("Directory size", f"du -sh '{target}'"),
+                        ("Find control file", f"find '{target}' -name control"),
+                        ("Pack as .deb", f"dpkg-deb -b '{target}' output.deb"),
+                    ])
         
         return commands
     
@@ -540,6 +626,25 @@ class InteractiveTerminal(QWidget):
             self.append_output("A command is already running. Please wait or stop it.\n", "error")
             return
         
+        # 检查是否是which dpkg-deb命令
+        if command.strip() in ['which dpkg-deb', 'which dpkg', 'where dpkg-deb', 'where dpkg']:
+            handled, output, error = handle_which_dpkg()
+            if handled:
+                if output:
+                    self.append_output(output, "normal")
+                if error:
+                    self.append_output(error, "error")
+                return
+        
+        # 尝试处理dpkg命令
+        handled, output, error = handle_dpkg_command(command, self.current_dir)
+        if handled:
+            if output:
+                self.append_output(output, "normal")
+            if error:
+                self.append_output(error, "error")
+            return
+        
         self.process = QProcess()
         self.process.setWorkingDirectory(self.current_dir)
         self.process.readyReadStandardOutput.connect(self.handle_stdout)
@@ -552,6 +657,8 @@ class InteractiveTerminal(QWidget):
         
         # 根据平台选择 shell
         if sys.platform == "win32":
+            # Windows: 设置正确的编码
+            self.process.setProcessEnvironment(self.setup_windows_environment())
             self.process.start("cmd", ["/c", command])
         else:
             self.process.start("sh", ["-c", command])
@@ -575,14 +682,38 @@ class InteractiveTerminal(QWidget):
         """处理标准输出"""
         if self.process:
             data = self.process.readAllStandardOutput()
-            text = bytes(data).decode('utf-8', errors='replace')
+            # Windows 中文编码处理
+            if sys.platform == "win32":
+                # 尝试多种编码
+                for encoding in ['utf-8', 'gbk', 'gb2312', 'cp936']:
+                    try:
+                        text = bytes(data).decode(encoding)
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    text = bytes(data).decode('utf-8', errors='replace')
+            else:
+                text = bytes(data).decode('utf-8', errors='replace')
             self.append_output(text, "normal")
     
     def handle_stderr(self):
         """处理标准错误"""
         if self.process:
             data = self.process.readAllStandardError()
-            text = bytes(data).decode('utf-8', errors='replace')
+            # Windows 中文编码处理
+            if sys.platform == "win32":
+                # 尝试多种编码
+                for encoding in ['utf-8', 'gbk', 'gb2312', 'cp936']:
+                    try:
+                        text = bytes(data).decode(encoding)
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                else:
+                    text = bytes(data).decode('utf-8', errors='replace')
+            else:
+                text = bytes(data).decode('utf-8', errors='replace')
             self.append_output(text, "error")
     
     def append_output(self, text, style="normal"):
@@ -644,6 +775,17 @@ class InteractiveTerminal(QWidget):
             self.dir_label.setText(f"{os.path.basename(self.current_dir)}>")
             self.dir_label.setToolTip(self.current_dir)
             self.append_output(f"Changed directory to: {self.current_dir}\n", "success")
+    
+    def setup_windows_environment(self):
+        """设置 Windows 环境变量"""
+        from PyQt6.QtCore import QProcessEnvironment
+        env = QProcessEnvironment.systemEnvironment()
+        
+        # 设置 UTF-8 编码
+        env.insert("PYTHONIOENCODING", "utf-8")
+        env.insert("CHCP", "65001")  # UTF-8 code page
+        
+        return env
     
     def change_terminal_theme(self, theme):
         """改变终端主题"""
