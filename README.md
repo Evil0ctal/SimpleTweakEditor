@@ -12,7 +12,9 @@
 [![Downloads](https://img.shields.io/github/downloads/Evil0ctal/SimpleTweakEditor/total?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 [![Release](https://img.shields.io/github/v/release/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases/latest)
 
-**专业的iOS .deb文件编辑工具 / Professional iOS .deb Package Editor**
+**专业的iOS .deb文件编辑工具 - 全平台支持，无需依赖**
+
+🚀 **一键解包/重打包** | 🎯 **智能Control编辑** | 🌍 **跨平台运行** | 📦 **包管理器集成**
 
 [English](README_EN.md) | [快速开始](docs/QUICK_START.md) | [下载](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 
@@ -59,32 +61,44 @@
 </table>
 </div>
 
-## 功能特性 / Features
+## 🎯 核心功能
 
-### 🔐 安全性 / Security
-- **路径验证** - 防止路径遍历攻击
-- **文件大小限制** - 防止资源耗尽（最大500MB）
-- **安全的文件操作** - 使用原子操作和临时文件
-- **权限管理** - 配置文件使用安全权限（0600）
+### 📦 .deb包处理
+- **一键解包** - 拖放.deb文件即可解压，保留完整目录结构和权限信息
+- **智能重打包** - 自动验证包结构，确保生成的.deb文件符合Debian标准
+- **跨平台支持** - Windows/macOS/Linux全平台运行，Windows下无需安装dpkg
+- **批量操作** - 支持命令行批处理模式，高效处理多个包文件
 
-### 🎯 核心功能 / Core Features
-- **解包.deb文件** - 将.deb文件解压到文件夹
-- **重新打包** - 将修改后的文件夹打包为.deb
-- **跨平台.deb处理** - 纯Python实现，Windows下无需dpkg依赖
-- **拖放支持** - 直接拖放文件进行操作
-- **Control文件编辑** - 内置编辑器和验证
-- **批处理模式** - 支持命令行批量操作
-- **软件包管理** - 内置软件包浏览器和仓库管理
-- **交互式终端** - 真正的PTY终端支持多标签页
+### 📝 Control文件编辑器
+- **语法高亮** - 专为Control文件优化的语法高亮显示
+- **实时验证** - 编辑时实时检查字段格式和依赖关系
+- **智能提示** - 自动补全包名、版本号等信息
+- **模板支持** - 内置常用Control文件模板
 
-### 🌍 用户体验 / User Experience
-- **多语言支持** - 中文/英文界面，自动检测系统语言
-- **多主题支持** - 暗色模式、亮色模式、彩色主题
-- **状态保存** - 记住窗口大小和设置
-- **智能提示** - 操作引导和错误提示
-- **智能查找** - 自动在多个路径查找dpkg-deb工具
-- **动态布局** - 智能适配不同屏幕尺寸
-- **窗口居中** - 自动窗口居中功能
+### 📱 软件包管理器
+- **多源支持** - 集成BigBoss、Chariz、Packix等主流iOS软件源
+- **包浏览器** - 按分类浏览和搜索数千个iOS插件包
+- **版本管理** - 查看包的所有历史版本，支持下载特定版本
+- **离线缓存** - 智能缓存包信息，加快加载速度
+
+### 💻 交互式终端
+- **真实PTY** - 完整的伪终端实现，支持颜色和特殊字符
+- **多标签页** - 同时运行多个终端会话
+- **命令预设** - 常用dpkg/apt命令快捷按钮
+- **历史记录** - 保存命令历史，支持快速重复执行
+
+### 🎨 界面与体验
+- **现代UI设计** - 基于PyQt6的原生界面，流畅美观
+- **深色/浅色主题** - 支持系统主题自动切换
+- **多语言支持** - 中英文界面，自动检测系统语言
+- **拖放操作** - 支持文件拖放，操作更直观
+- **状态保存** - 记住窗口位置、大小和用户偏好
+
+### 🔐 安全特性
+- **路径保护** - 防止路径遍历和符号链接攻击
+- **大小限制** - 限制处理文件大小，防止内存溢出
+- **权限管理** - 正确处理Unix文件权限，即使在Windows上
+- **完整性校验** - 验证包结构完整性，防止损坏的包
 
 ## 安装 / Installation
 
@@ -117,85 +131,62 @@ sudo apt-get install dpkg
 # 程序自动使用内置纯Python dpkg实现
 ```
 
-## 下载和使用 / Download and Usage
+## 🚀 快速开始
 
-### 🚀 快速开始 / Quick Start
+### 下载预构建版本（推荐）
 
-#### 下载预构建版本 / Download Pre-built Releases
-- **macOS**: 
-  - **推荐**: 下载独立版 `SimpleTweakEditor.app` (包含所有依赖，约31MB)
-  - **备选**: 下载标准版 `.app` 或 `.dmg` 安装包 (需要Python环境)
-- **Linux**: 下载对应的可执行文件
-- 从 [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases) 页面下载
+从 [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases) 下载适合你系统的版本：
+
+| 平台 | 文件名 | 说明 |
+|------|--------|------|
+| **Windows** | `SimpleTweakEditor-v1.0.2-Windows-x64.zip` | 解压即用，无需安装 |
+| **macOS Intel** | `SimpleTweakEditor-v1.0.2-macOS-x64.zip` | Intel芯片Mac |
+| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.2-macOS-Apple-Silicon.zip` | M1/M2/M3芯片Mac |
+| **Linux** | `SimpleTweakEditor-v1.0.2-Linux-x64.zip` | 支持大多数Linux发行版 |
 
 #### 从源代码运行 / Run from Source
 ```bash
 python main.py
 ```
 
-### 命令行模式 / Command Line Mode
-```bash
-# 查看帮助 / Show help
-python main.py --help
+### 使用方法
 
-# 解包.deb文件 / Unpack .deb file
+#### GUI模式（图形界面）
+1. 双击运行程序
+2. 拖放.deb文件到主窗口即可解包
+3. 编辑文件后点击"重新打包"按钮
+
+#### 命令行模式
+```bash
+# 解包.deb文件
 python main.py --unpack package.deb --output ./unpacked/
 
-# 重新打包 / Repack folder
-python main.py --repack ./package_folder/ --output package.deb
+# 重新打包文件夹
+python main.py --repack ./package_folder/ --output package_new.deb
 
-# 批处理模式 / Batch mode
+# 批量解包
 python main.py --batch --unpack "*.deb"
 
-# 设置语言 / Set language
+# 设置界面语言
 python main.py --lang zh  # 中文
 python main.py --lang en  # English
 ```
 
-## 构建应用 / Building the Application
+## 🛠️ 工作原理
 
-### 🔨 构建 macOS .app / Build macOS .app
+### Windows平台.deb处理
+本工具在Windows上使用纯Python实现的dpkg功能，无需安装WSL或其他Linux工具：
+- 完整实现AR归档格式解析
+- 支持gz/xz/lzma等所有压缩格式
+- 智能处理Unix文件权限映射
+- 自动识别并设置可执行文件权限
 
-```bash
-# 进入构建脚本目录 / Enter build scripts directory
-cd build_scripts
-
-# 构建独立版应用包（推荐）/ Build standalone app bundle (recommended)
-# 包含所有Python依赖，用户无需安装Python或PyQt6
-python3 build_macos_app_standalone.py
-
-# 或构建标准版应用包 / Or build standard app bundle
-# 需要用户系统有Python和依赖
-python3 build_macos_app.py
-
-# 应用将生成在 / App will be created at:
-# dist/SimpleTweakEditor.app
-```
-
-### 🐧 构建 Linux 版本 / Build for Linux
-
-```bash
-# 创建 AppImage 结构 / Create AppImage structure
-./build_scripts/build_linux_appimage.sh
-
-# 使用 PyInstaller 构建单文件版本 / Build single file with PyInstaller
-python3 build_scripts/build_release.py
-```
-
-### 📦 一键构建所有版本 / Build All Versions
-
-```bash
-# 自动构建所有平台版本 / Auto build for all platforms
-./build_scripts/prepare_release.sh
-
-# 构建产物将整理在 / Builds will be organized in:
-# releases/v1.0.0/
-#   ├── macOS/
-#   │   ├── SimpleTweakEditor.app
-#   │   └── SimpleTweakEditor-1.0.0-macOS.dmg
-#   └── Linux/
-#       └── SimpleTweakEditor-1.0.0-Linux
-```
+### 智能权限处理
+在Windows环境下创建的.deb包会自动设置正确的Unix权限：
+- DEBIAN脚本文件（preinst/postinst等）: 755
+- 二进制可执行文件: 755
+- 普通文件: 644
+- 目录: 755
 
 ## 项目结构 / Project Structure
 
@@ -251,18 +242,25 @@ SimpleTweakEditor/
         ├── file_operations.py # 文件操作 / File operations
         └── system_utils.py  # 系统工具 / System utilities
 │
-├── build_scripts/            # 构建脚本 / Build scripts
-│   ├── build_macos_app.py   # macOS 标准版 .app 构建脚本
-│   ├── build_macos_app_standalone.py # macOS 独立版 .app 构建脚本
-│   ├── build_linux_appimage.sh # Linux AppImage 脚本
-│   ├── prepare_release.sh   # 发布准备脚本
-│   └── clean_all.sh        # 清理所有构建文件
+├── build.py                 # 通用构建脚本 / Universal build script
 │
 └── releases/                # 发布文件 / Release files
-    └── v1.0.0/             # 版本发布目录
+    └── vX.X.X/             # 版本发布目录 / Version release directory
+        ├── Windows/        # Windows版本 / Windows builds
+        ├── Darwin/         # macOS版本 / macOS builds
+        └── Linux/          # Linux版本 / Linux builds
 ```
 
 ## 开发指南 / Development Guide
+
+### 🔨 构建发布 / Building Releases
+
+```bash
+# 一键构建当前平台版本
+python build.py
+```
+
+自动生成对应平台的可执行文件到 `releases/` 目录
 
 ### 代码质量 / Code Quality
 - 遵循PEP 8规范
@@ -283,15 +281,26 @@ SimpleTweakEditor/
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 创建Pull Request
 
-## 更新日志 / Changelog
+## 📋 更新日志
 
-### v1.0.2 (2025-05-30)
-- 🪟 **Windows支持** - 添加完整的Windows平台支持
-- 🔧 **纯Python dpkg实现** - 无需依赖系统dpkg，支持所有.deb操作
-- 🔐 **Windows权限处理** - 智能处理Unix权限在Windows环境下的映射
-- 📦 **多压缩格式支持** - 支持gz/xz/lzma压缩格式的.deb文件
-- ⚡ **性能优化** - 改进文件处理和内存使用效率
-- 🛡️ **安全增强** - 增强路径遍历保护和文件验证
+### 🆕 v1.0.2 (2025-05-30) - Windows全面支持
+**重大更新：完整的Windows支持！**
+- 🪟 **Windows原生支持** 
+  - 纯Python实现dpkg功能，无需WSL或Cygwin
+  - 支持Windows 10/11所有版本
+  - 自动处理路径分隔符和权限映射
+- 🔧 **跨平台.deb处理引擎**
+  - 完整实现AR归档格式
+  - 支持所有压缩格式（gz/xz/lzma）
+  - 智能识别并保留Unix文件权限
+- 📦 **通用构建系统**
+  - 新增`build.py`一键构建脚本
+  - 自动检测平台并生成对应格式
+  - 输出带版本号的压缩包，方便分发
+- 🛡️ **安全性增强**
+  - 改进路径遍历保护
+  - 增强包完整性验证
+  - 限制最大文件大小防止DoS
 
 ### v1.0.1 (2025-05-28)
 - 🔧 **UI布局优化** - 修复交互式终端组件重叠和显示问题

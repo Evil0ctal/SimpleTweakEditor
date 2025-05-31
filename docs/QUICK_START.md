@@ -1,17 +1,27 @@
 # SimpleTweakEditor 快速开始指南
 
-*最后更新: 2025-05-28*
+*最后更新: 2025-05-30*
 
 ## 🚀 对于用户
 
+### Windows 用户 🆕
+
+#### 最简单的方式 - 下载即用
+1. 从 [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases) 下载最新版本
+2. 下载 `SimpleTweakEditor-v1.0.2-Windows-x64.zip`
+3. 解压到任意文件夹
+4. 双击 `SimpleTweakEditor.exe` 运行
+5. **无需安装dpkg或任何Linux工具！**
+
 ### macOS 用户
 
-#### 最简单的方式 - 使用独立版 .app （推荐）
+#### 最简单的方式 - 使用预构建版
 1. 从 [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases) 下载最新版本
-2. 下载 `SimpleTweakEditor-macOS.zip`
-3. 解压后将 SimpleTweakEditor.app 拖到 Applications 文件夹
-4. 首次运行时，右键点击应用并选择"打开"
-5. 安装 dpkg（如果还没有安装）：
+2. Intel Mac: 下载 `SimpleTweakEditor-v1.0.2-macOS-x64.zip`
+3. Apple Silicon Mac: 下载 `SimpleTweakEditor-v1.0.2-macOS-Apple-Silicon.zip`
+4. 解压后将 SimpleTweakEditor.app 拖到 Applications 文件夹
+5. 首次运行时，右键点击应用并选择"打开"
+6. 安装 dpkg（可选，macOS上仍建议安装）：
    ```bash
    brew install dpkg
    ```
@@ -151,22 +161,44 @@ python main.py --lang en  # English
 ## ❓ 常见问题
 
 ### Q: 提示找不到 dpkg-deb
-**A:** 安装 dpkg：
-- macOS: `brew install dpkg`
-- Linux: `sudo apt-get install dpkg`
+**A:** 
+- **Windows**: 无需安装！程序已内置纯Python实现
+- **macOS**: `brew install dpkg`
+- **Linux**: `sudo apt-get install dpkg`
 
 ### Q: 首次打开 macOS 应用提示无法验证
 **A:** 右键点击应用，选择"打开"，然后在弹出的对话框中再次点击"打开"
 
 ### Q: 打包失败提示权限错误
-**A:** 确保 DEBIAN 目录中的脚本文件有正确的执行权限：
-```bash
-chmod 755 DEBIAN/postinst
-chmod 755 DEBIAN/prerm
-```
+**A:** 
+- **Windows**: 程序会自动处理权限，无需手动设置
+- **macOS/Linux**: 确保 DEBIAN 目录中的脚本文件有正确的执行权限：
+  ```bash
+  chmod 755 DEBIAN/postinst
+  chmod 755 DEBIAN/prerm
+  ```
 
 ### Q: 如何查看更详细的错误信息
 **A:** 切换到"命令行"标签页查看详细的命令输出
+
+## 🪟 Windows平台特色功能
+
+### 无需依赖
+- 内置纯Python dpkg实现，无需安装WSL、Cygwin或任何Linux工具
+- 支持所有.deb压缩格式（gz/xz/lzma）
+- 完整的AR归档格式支持
+
+### 智能权限处理
+Windows下创建的.deb包会自动设置正确的Unix权限：
+- DEBIAN目录下的脚本（preinst/postinst等）自动设为755
+- bin/sbin目录下的文件自动设为755
+- 带有shebang（#!）的脚本自动设为755
+- 普通文件设为644，目录设为755
+
+### 路径处理
+- 自动转换Windows路径分隔符
+- 支持长路径名（超过260字符）
+- 正确处理符号链接和特殊字符
 
 ## 🎨 提示和技巧
 
@@ -174,6 +206,7 @@ chmod 755 DEBIAN/prerm
 2. **快速访问**: 将常用的 .deb 文件拖到 Dock/任务栏旁边方便拖放
 3. **备份原文件**: 修改前建议备份原始 .deb 文件
 4. **测试修改**: 在测试设备上验证修改后的包是否正常工作
+5. **Windows用户注意**: 在Windows上编辑文本文件时，注意使用Unix换行符（LF）而非Windows换行符（CRLF）
 
 ## 📚 更多资源
 

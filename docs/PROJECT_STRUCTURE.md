@@ -1,6 +1,6 @@
 # SimpleTweakEditor 项目结构说明
 
-*最后更新: 2025-05-28*
+*最后更新: 2025-05-30*
 
 ## 📁 目录结构
 
@@ -45,6 +45,7 @@ SimpleTweakEditor/
 │   ├── 📂 utils/                # 工具函数模块
 │   │   ├── 📄 __init__.py
 │   │   ├── 📄 file_operations.py # 文件操作（安全增强）
+│   │   ├── 📄 dpkg_deb.py       # 跨平台dpkg实现 🆕
 │   │   └── 📄 system_utils.py  # 系统工具
 │   │
 │   ├── 📂 localization/         # 多语言支持
@@ -75,12 +76,7 @@ SimpleTweakEditor/
 │   ├── 📂 app_icon.iconset/    # macOS图标集
 │   └── 📄 icon_*.png           # 各种尺寸的图标
 │
-├── 📂 build_scripts/            # 构建脚本
-│   ├── 🔧 build_macos_app_standalone.py # macOS独立版构建
-│   ├── 🔧 build_linux_appimage.sh # Linux AppImage构建
-│   ├── 🔧 prepare_release.sh   # 发布准备脚本
-│   ├── 🔧 clean_all.sh         # 清理构建文件
-│   └── 🔧 get_version.py       # 获取版本号脚本
+├── 📄 build.py                 # 通用构建脚本 🆕
 │
 └── 📂 releases/                 # 发布文件目录
     └── 📂 v1.0.*/              # 各版本发布文件
@@ -109,6 +105,7 @@ SimpleTweakEditor/
 
 #### 4. **utils/** - 工具函数
 - `file_operations.py`: 安全的文件操作，防止路径遍历
+- `dpkg_deb.py`: 纯Python实现的dpkg功能，支持Windows 🆕
 - `system_utils.py`: 系统相关工具，如dpkg-deb检测
 
 #### 5. **localization/** - 国际化
@@ -132,7 +129,7 @@ SimpleTweakEditor/
 ### 平台支持
 - **macOS**: 10.13+
 - **Linux**: Ubuntu 18.04+
-- **Windows**: 不支持（dpkg-deb限制）
+- **Windows**: Windows 10+ (完整支持) 🆕
 
 ## 🔐 安全特性
 
@@ -173,15 +170,32 @@ python main.py
 
 ### 构建发布版本
 ```bash
-# macOS独立版
-python build_scripts/build_macos_app_standalone.py
-
-# Linux AppImage
-./build_scripts/build_linux_appimage.sh
-
-# 准备所有平台发布
-./build_scripts/prepare_release.sh
+# 通用构建命令（v1.0.2新增）
+python build.py
 ```
+
+## 🪟 Windows支持实现 (v1.0.2新增)
+
+### dpkg_deb.py 模块
+纯Python实现的dpkg功能，解决Windows平台依赖问题：
+
+#### 核心类
+- `ARArchive`: 处理.deb文件的AR归档格式
+- `DpkgDeb`: 主功能类，提供dpkg-deb兼容的API
+
+#### 支持的功能
+- ✅ 解包.deb文件 (`extract`/`unpack`)
+- ✅ 构建.deb文件 (`build`/`pack`)
+- ✅ 查看包信息 (`info`)
+- ✅ 列出包内容 (`contents`)
+- ✅ 验证包结构 (`verify`)
+
+#### 智能权限处理
+Windows环境下自动设置正确的Unix权限：
+- DEBIAN脚本: 0755
+- 可执行文件: 0755
+- 普通文件: 0644
+- 目录: 0755
 
 ## 📝 编码规范
 

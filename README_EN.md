@@ -12,7 +12,9 @@
 [![Downloads](https://img.shields.io/github/downloads/Evil0ctal/SimpleTweakEditor/total?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 [![Release](https://img.shields.io/github/v/release/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases/latest)
 
-**Professional iOS .deb Package Editor**
+**Professional iOS .deb Package Editor - Cross-Platform, No Dependencies**
+
+🚀 **One-Click Unpack/Repack** | 🎯 **Smart Control Editor** | 🌍 **Cross-Platform** | 📦 **Package Manager**
 
 [中文文档](README.md) | [Quick Start](docs/QUICK_START.md) | [Download](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 
@@ -59,32 +61,44 @@
 </table>
 </div>
 
-## ✨ Features
+## 🎯 Core Features
 
-### 🔐 Security First
-- **Path Validation** - Protection against path traversal attacks
-- **File Size Limits** - Prevents resource exhaustion (500MB max)
-- **Secure Operations** - Atomic file operations with proper permissions
-- **Safe Configuration** - Secure permission management (0600)
+### 📦 .deb Package Handling
+- **One-Click Unpack** - Drag & drop to extract, preserving directory structure and permissions
+- **Smart Repack** - Automatic validation ensures Debian-compliant packages
+- **Cross-Platform** - Runs on Windows/macOS/Linux, no dpkg required on Windows
+- **Batch Operations** - Command-line batch mode for efficient multi-package processing
 
-### 🎯 Core Functionality
-- **Unpack .deb Files** - Extract .deb packages while preserving structure
-- **Repack Folders** - Build .deb packages from modified folders
-- **Cross-platform .deb Handling** - Pure Python implementation, no dpkg dependency on Windows
-- **Drag & Drop** - Simple drag and drop interface for quick operations
-- **Control File Editor** - Built-in editor with syntax validation
-- **Batch Processing** - Command-line support for automation
-- **Package Management** - Built-in package browser and repository management
-- **Interactive Terminal** - Real PTY-based terminal with multi-tab support
+### 📝 Control File Editor
+- **Syntax Highlighting** - Optimized highlighting for Control file syntax
+- **Real-time Validation** - Live format and dependency checking
+- **Auto-completion** - Smart suggestions for package names and versions
+- **Template Support** - Built-in templates for common Control files
 
-### 🌍 User Experience
-- **Multi-language** - English/Chinese with automatic system detection
-- **Multiple Themes** - Dark mode, light mode, and colorful themes
-- **Dynamic Layout** - Smart layout adaptation based on screen size
-- **Window Management** - Automatic window centering and state persistence
-- **Smart Detection** - Automatically finds dpkg-deb in multiple paths
-- **Cross-platform Fonts** - Improved font compatibility across different systems
-- **Intuitive UI** - Clean, modern interface with helpful tooltips
+### 📱 Package Manager
+- **Multi-Source Support** - Integrated BigBoss, Chariz, Packix and major iOS repos
+- **Package Browser** - Browse and search thousands of iOS tweaks by category
+- **Version History** - View all package versions, download specific releases
+- **Offline Cache** - Smart caching for faster loading
+
+### 💻 Interactive Terminal
+- **Real PTY** - Full pseudo-terminal with color and special character support
+- **Multi-tabs** - Run multiple terminal sessions simultaneously
+- **Command Presets** - Quick buttons for common dpkg/apt commands
+- **History** - Command history with quick re-execution
+
+### 🎨 Interface & Experience
+- **Modern UI** - Native PyQt6 interface, smooth and beautiful
+- **Dark/Light Themes** - Automatic theme switching based on system
+- **Multi-language** - English/Chinese interface with auto-detection
+- **Drag & Drop** - Intuitive file operations
+- **State Persistence** - Remembers window position, size and preferences
+
+### 🔐 Security Features
+- **Path Protection** - Prevents path traversal and symlink attacks
+- **Size Limits** - File size restrictions prevent memory exhaustion
+- **Permission Handling** - Correct Unix permissions even on Windows
+- **Integrity Checks** - Package structure validation prevents corruption
 
 ## 🚀 Installation
 
@@ -94,14 +108,16 @@
 - **Windows**: Windows 10 or later
 - **Dependencies**: dpkg-deb (Linux/macOS), built-in pure Python implementation on Windows
 
-### Download and Installation
+### Download Pre-built Releases (Recommended)
 
-#### Download Pre-built Releases
-- **macOS**: 
-  - **Recommended**: Download standalone version `SimpleTweakEditor.app` (includes all dependencies, ~31MB)
-  - **Alternative**: Download standard `.app` or `.dmg` installer (requires Python environment)
-- **Linux**: Download the corresponding executable file
-- Download from [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
+Download the version for your system from [Releases](https://github.com/Evil0ctal/SimpleTweakEditor/releases):
+
+| Platform | Filename | Description |
+|----------|----------|-------------|
+| **Windows** | `SimpleTweakEditor-v1.0.2-Windows-x64.zip` | Extract and run, no installation |
+| **macOS Intel** | `SimpleTweakEditor-v1.0.2-macOS-x64.zip` | For Intel-based Macs |
+| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.2-macOS-Apple-Silicon.zip` | For M1/M2/M3 Macs |
+| **Linux** | `SimpleTweakEditor-v1.0.2-Linux-x64.zip` | Works on most Linux distributions |
 
 #### Run from Source
 ```bash
@@ -135,73 +151,42 @@ python main.py
 ## 📖 Usage
 
 ### GUI Mode
-Simply launch the application and:
-1. **Drag & drop** a .deb file to unpack it
-2. **Edit** the contents as needed
-3. **Repack** the folder back to .deb
+1. Double-click to launch the application
+2. Drag & drop a .deb file to the main window to unpack
+3. Edit files as needed
+4. Click "Repack" button to create new .deb
 
 ### Command Line Mode
 ```bash
-# Show help
-python main.py --help
-
 # Unpack a .deb file
 python main.py --unpack package.deb --output ./unpacked/
 
 # Repack a folder
 python main.py --repack ./package_folder/ --output package_new.deb
 
-# Batch unpack
+# Batch unpack multiple files
 python main.py --batch --unpack "*.deb"
 
-# Set language
-python main.py --lang en  # or 'zh' for Chinese
+# Set interface language
+python main.py --lang en  # English
+python main.py --lang zh  # Chinese
 ```
 
-## 🔨 Building the Application
+## 🛠️ How It Works
 
-### Build macOS .app
+### Windows .deb Handling
+This tool uses a pure Python dpkg implementation on Windows, no WSL or Linux tools required:
+- Complete AR archive format parsing
+- Supports all compression formats (gz/xz/lzma)
+- Smart Unix permission mapping
+- Automatic executable detection and permission setting
 
-```bash
-# Enter build scripts directory
-cd build_scripts
-
-# Build standalone app bundle (recommended)
-# Includes all Python dependencies, users don't need Python or PyQt6
-python3 build_macos_app_standalone.py
-
-# Or build standard app bundle
-# Requires Python and dependencies on user's system
-python3 build_macos_app.py
-
-# App will be created at:
-# dist/SimpleTweakEditor.app
-```
-
-### Build for Linux
-
-```bash
-# Create AppImage structure
-./build_scripts/build_linux_appimage.sh
-
-# Build single file with PyInstaller
-python3 build_scripts/build_release.py
-```
-
-### Build All Versions
-
-```bash
-# Auto build for all platforms
-./build_scripts/prepare_release.sh
-
-# Builds will be organized in:
-# releases/v1.0.0/
-#   ├── macOS/
-#   │   ├── SimpleTweakEditor.app
-#   │   └── SimpleTweakEditor-1.0.0-macOS.dmg
-#   └── Linux/
-#       └── SimpleTweakEditor-1.0.0-Linux
-```
+### Smart Permission Handling
+.deb packages created on Windows automatically get correct Unix permissions:
+- DEBIAN scripts (preinst/postinst/etc): 755
+- Binary executables: 755
+- Regular files: 644
+- Directories: 755
 
 ## 📚 Documentation
 
@@ -240,13 +225,24 @@ A: Install Python dependencies: `pip3 install PyQt6 Pillow`
 
 ## 📝 Changelog
 
-### v1.0.2 (2025-05-30)
-- 🪟 **Windows Support** - Added full Windows platform support
-- 🔧 **Pure Python dpkg Implementation** - No system dpkg dependency required, supports all .deb operations
-- 🔐 **Windows Permission Handling** - Smart Unix permission mapping in Windows environment
-- 📦 **Multi-compression Support** - Support for gz/xz/lzma compressed .deb files
-- ⚡ **Performance Optimization** - Improved file handling and memory efficiency
-- 🛡️ **Security Enhancement** - Enhanced path traversal protection and file validation
+### 🆕 v1.0.2 (2025-05-30) - Full Windows Support
+**Major Update: Complete Windows Support!**
+- 🪟 **Native Windows Support**
+  - Pure Python dpkg implementation, no WSL or Cygwin needed
+  - Full Windows 10/11 compatibility
+  - Automatic path separator and permission handling
+- 🔧 **Cross-Platform .deb Engine**
+  - Complete AR archive format implementation
+  - All compression formats supported (gz/xz/lzma)
+  - Smart Unix permission preservation
+- 📦 **Universal Build System**
+  - New `build.py` one-click build script
+  - Auto-detects platform and builds appropriate format
+  - Creates versioned zip archives for easy distribution
+- 🛡️ **Security Enhancements**
+  - Improved path traversal protection
+  - Enhanced package integrity verification
+  - File size limits to prevent DoS
 
 ### v1.0.1 (2025-05-28)
 - 🔧 **UI Layout Optimization** - Fixed interactive terminal component overlap and display issues
@@ -320,18 +316,25 @@ SimpleTweakEditor/
 │   └── resources/           # Resources
 │       └── default_repositories.json # Default repositories
 │
-├── build_scripts/            # Build scripts
-│   ├── build_macos_app.py   # macOS standard .app build
-│   ├── build_macos_app_standalone.py # macOS standalone .app build
-│   ├── build_linux_appimage.sh # Linux AppImage script
-│   ├── prepare_release.sh   # Release preparation script
-│   └── clean_all.sh        # Clean all build files
+├── build.py                 # Universal build script
 │
 └── releases/                # Release files
-    └── v1.0.0/             # Version release directory
+    └── vX.X.X/             # Version release directory
+        ├── Windows/        # Windows builds
+        ├── Darwin/         # macOS builds
+        └── Linux/          # Linux builds
 ```
 
 ## 💻 Development Guide
+
+### 🔨 Building Releases
+
+```bash
+# One-click build for current platform
+python build.py
+```
+
+Automatically generates platform-specific executables in `releases/` directory
 
 ### Code Quality
 - Follows PEP 8 standards
