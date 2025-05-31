@@ -6,6 +6,37 @@ English | [中文](RELEASE_NOTES.md)
 
 </div>
 
+## 🪟 v1.0.2 (2025-05-30)
+
+### Windows Platform Support & Cross-Platform Enhancement
+
+This release's major highlight is the addition of full Windows platform support, solving the dpkg dependency issue on Windows through a pure Python implementation.
+
+#### 🆕 Major New Features
+- **Full Windows Support** - Provides complete functionality on Windows platform, identical to macOS/Linux
+- **Pure Python dpkg Implementation** - Complete rewrite of .deb file handling logic, no system dpkg dependency required
+- **Cross-Platform Permission Handling** - Smart Unix file permission mapping in Windows environment
+- **Multi-Compression Support** - Support for gz, xz, lzma and other compression formats in .deb files
+
+#### 🔧 Technical Improvements
+- **AR Archive Format Handling** - Complete AR archive read/write functionality implementation
+- **Secure Path Validation** - Enhanced protection against path traversal attacks
+- **Smart Permission Mapping** - Automatic executable permission setting for DEBIAN scripts and bin directory files on Windows
+- **File Integrity Verification** - Enhanced .deb package validation and testing capabilities
+
+#### 📦 Compatibility Enhancements
+- **Backward Compatibility** - Maintains full compatibility with existing code
+- **Multi-Platform Build** - Updated build scripts to support cross-platform releases
+- **Documentation Updates** - Updated README and release notes to reflect Windows support
+
+### Technical Implementation Details
+- Implemented complete `dpkg_deb.py` module providing same API as dpkg-deb
+- Supports extract, build, info, contents listing, and verify operations
+- Automatic detection and setting of appropriate Unix permissions on Windows (755 for executables, 644 for regular files)
+- Support for lzma compression format, compatible with older iOS package formats
+
+---
+
 ## 🔧 v1.0.1 (2025-05-28)
 
 ### Bug Fixes & Improvements

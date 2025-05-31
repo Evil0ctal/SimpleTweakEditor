@@ -2,12 +2,12 @@
 
 <div align="center">
 
-![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.1-blue?style=for-the-badge&logo=apple&logoColor=white)
+![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.2-blue?style=for-the-badge&logo=apple&logoColor=white)
 
 [![License](https://img.shields.io/github/license/Evil0ctal/SimpleTweakEditor?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![PyQt6](https://img.shields.io/badge/PyQt6-6.0%2B-green?style=flat-square&logo=qt&logoColor=white)](https://pypi.org/project/PyQt6/)
-[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-lightgrey?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor)
 [![GitHub Stars](https://img.shields.io/github/stars/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/Evil0ctal/SimpleTweakEditor/total?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 [![Release](https://img.shields.io/github/v/release/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases/latest)
@@ -70,6 +70,7 @@
 ### 🎯 核心功能 / Core Features
 - **解包.deb文件** - 将.deb文件解压到文件夹
 - **重新打包** - 将修改后的文件夹打包为.deb
+- **跨平台.deb处理** - 纯Python实现，Windows下无需dpkg依赖
 - **拖放支持** - 直接拖放文件进行操作
 - **Control文件编辑** - 内置编辑器和验证
 - **批处理模式** - 支持命令行批量操作
@@ -90,7 +91,7 @@
 ### 系统要求 / System Requirements
 - Python 3.8+
 - PyQt6
-- dpkg-deb（Linux/macOS）
+- dpkg-deb（Linux/macOS，Windows下使用内置纯Python实现）
 
 ### 安装步骤 / Setup
 
@@ -111,6 +112,9 @@ brew install dpkg
 
 # Linux用户安装dpkg / Linux users install dpkg
 sudo apt-get install dpkg
+
+# Windows用户无需额外安装 / Windows users need no additional setup
+# 程序自动使用内置纯Python dpkg实现
 ```
 
 ## 下载和使用 / Download and Usage
@@ -233,6 +237,7 @@ SimpleTweakEditor/
     │
     ├── utils/                # 工具函数 / Utilities
     │   ├── file_operations.py # 文件操作 / File operations
+    │   ├── dpkg_deb.py      # 跨平台dpkg实现 / Cross-platform dpkg
     │   └── system_utils.py  # 系统工具 / System utilities
     │
     ├── localization/        # 多语言 / Localization
@@ -279,6 +284,14 @@ SimpleTweakEditor/
 5. 创建Pull Request
 
 ## 更新日志 / Changelog
+
+### v1.0.2 (2025-05-30)
+- 🪟 **Windows支持** - 添加完整的Windows平台支持
+- 🔧 **纯Python dpkg实现** - 无需依赖系统dpkg，支持所有.deb操作
+- 🔐 **Windows权限处理** - 智能处理Unix权限在Windows环境下的映射
+- 📦 **多压缩格式支持** - 支持gz/xz/lzma压缩格式的.deb文件
+- ⚡ **性能优化** - 改进文件处理和内存使用效率
+- 🛡️ **安全增强** - 增强路径遍历保护和文件验证
 
 ### v1.0.1 (2025-05-28)
 - 🔧 **UI布局优化** - 修复交互式终端组件重叠和显示问题

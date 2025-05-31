@@ -2,12 +2,12 @@
 
 <div align="center">
 
-![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.1-blue?style=for-the-badge&logo=apple&logoColor=white)
+![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.2-blue?style=for-the-badge&logo=apple&logoColor=white)
 
 [![License](https://img.shields.io/github/license/Evil0ctal/SimpleTweakEditor?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![PyQt6](https://img.shields.io/badge/PyQt6-6.0%2B-green?style=flat-square&logo=qt&logoColor=white)](https://pypi.org/project/PyQt6/)
-[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-lightgrey?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor)
 [![GitHub Stars](https://img.shields.io/github/stars/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/Evil0ctal/SimpleTweakEditor/total?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 [![Release](https://img.shields.io/github/v/release/Evil0ctal/SimpleTweakEditor?style=flat-square)](https://github.com/Evil0ctal/SimpleTweakEditor/releases/latest)
@@ -70,6 +70,7 @@
 ### 🎯 Core Functionality
 - **Unpack .deb Files** - Extract .deb packages while preserving structure
 - **Repack Folders** - Build .deb packages from modified folders
+- **Cross-platform .deb Handling** - Pure Python implementation, no dpkg dependency on Windows
 - **Drag & Drop** - Simple drag and drop interface for quick operations
 - **Control File Editor** - Built-in editor with syntax validation
 - **Batch Processing** - Command-line support for automation
@@ -90,7 +91,8 @@
 ### System Requirements
 - **macOS**: 10.13 or later
 - **Linux**: Ubuntu 18.04+ or equivalent
-- **Dependencies**: dpkg-deb (for .deb operations)
+- **Windows**: Windows 10 or later
+- **Dependencies**: dpkg-deb (Linux/macOS), built-in pure Python implementation on Windows
 
 ### Download and Installation
 
@@ -122,6 +124,9 @@ brew install dpkg
 
 # Linux users install dpkg
 sudo apt-get install dpkg
+
+# Windows users need no additional setup
+# Application automatically uses built-in pure Python dpkg implementation
 
 # Run application
 python main.py
@@ -235,6 +240,14 @@ A: Install Python dependencies: `pip3 install PyQt6 Pillow`
 
 ## 📝 Changelog
 
+### v1.0.2 (2025-05-30)
+- 🪟 **Windows Support** - Added full Windows platform support
+- 🔧 **Pure Python dpkg Implementation** - No system dpkg dependency required, supports all .deb operations
+- 🔐 **Windows Permission Handling** - Smart Unix permission mapping in Windows environment
+- 📦 **Multi-compression Support** - Support for gz/xz/lzma compressed .deb files
+- ⚡ **Performance Optimization** - Improved file handling and memory efficiency
+- 🛡️ **Security Enhancement** - Enhanced path traversal protection and file validation
+
 ### v1.0.1 (2025-05-28)
 - 🔧 **UI Layout Optimization** - Fixed interactive terminal component overlap and display issues
 - 🌍 **Language Switching Stability** - Resolved crashes when switching languages
@@ -297,6 +310,7 @@ SimpleTweakEditor/
 │   │
 │   ├── utils/                # Utilities
 │   │   ├── file_operations.py # File operations
+│   │   ├── dpkg_deb.py      # Cross-platform dpkg implementation
 │   │   └── system_utils.py  # System utilities
 │   │
 │   ├── localization/        # Localization

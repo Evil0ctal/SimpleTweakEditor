@@ -20,4 +20,4 @@ try:
     print(APP_VERSION)
 except ImportError as e:
     print(f"Error importing version: {e}", file=sys.stderr)
-    print("1.0.1")  # 默认版本号作为后备
+    print("1.0.2")  # 默认版本号作为后备
