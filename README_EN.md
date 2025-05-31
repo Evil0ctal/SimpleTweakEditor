@@ -14,7 +14,9 @@
 
 **Professional iOS .deb Package Editor - Cross-Platform, No Dependencies**
 
-🚀 **One-Click Unpack/Repack** | 🎯 **Smart Control Editor** | 🌍 **Cross-Platform** | 📦 **Package Manager**
+🚀 **One-Click Unpack/Repack** | 🎯 **Smart Control Editor** | 🌍 **Cross-Platform** | 📦 **Package Manager** | 🌐 **Multi-Language UI**
+
+🎨 **20+ Themes** | 🖥️ **Interactive Terminal** | 🔒 **Safe Operations** | ⚡ **No dpkg Required (Windows)** | 🎭 **Drag & Drop**
 
 [中文文档](README.md) | [Quick Start](docs/QUICK_START.md) | [Download](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 

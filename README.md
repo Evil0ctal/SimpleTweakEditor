@@ -14,7 +14,9 @@
 
 **专业的iOS .deb文件编辑工具 - 全平台支持，无需依赖**
 
-🚀 **一键解包/重打包** | 🎯 **智能Control编辑** | 🌍 **跨平台运行** | 📦 **包管理器集成**
+🚀 **一键解包/重打包** | 🎯 **智能Control编辑** | 🌍 **跨平台运行** | 📦 **包管理器集成** | 🌐 **中英文界面**
+
+🎨 **20+主题** | 🖥️ **交互式终端** | 🔒 **安全操作** | ⚡ **Windows无需dpkg** | 🎭 **拖放支持**
 
 [English](README_EN.md) | [快速开始](docs/QUICK_START.md) | [下载](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 
