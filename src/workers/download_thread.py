@@ -1,6 +1,18 @@
+# -*- coding: utf-8 -*-
 """
-下载线程
-处理deb包的下载任务
+创建时间: 2025-05-27
+作者: Evil0ctal
+
+中文介绍:
+下载线程模块。实现了用于下载deb包的工作线程，包括单个包下载（DownloadWorker）、
+批量下载（BatchDownloadWorker）和软件源刷新（RepoRefreshWorker）。这些线程类
+提供了下载进度反馈、状态更新和错误处理功能，支持取消操作。
+
+英文介绍:
+Download thread module. Implements worker threads for downloading deb packages, including 
+single package download (DownloadWorker), batch download (BatchDownloadWorker), and 
+repository refresh (RepoRefreshWorker). These thread classes provide download progress 
+feedback, status updates, and error handling capabilities, with support for cancellation.
 """
 
 from PyQt6.QtCore import QThread, pyqtSignal, QObject

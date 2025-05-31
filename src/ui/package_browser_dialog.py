@@ -1,6 +1,17 @@
+# -*- coding: utf-8 -*-
 """
-包浏览器对话框
-浏览软件源中的包，支持搜索、筛选和下载
+创建时间: 2024-11-22
+作者: Evil0ctal
+
+中文介绍:
+包浏览器对话框模块，用于浏览软件源中的包。
+支持搜索、筛选、批量选择和下载功能。
+提供详细的包信息显示和进度跟踪。
+
+英文介绍:
+Package browser dialog module for browsing packages in software repositories.
+Supports search, filtering, batch selection, and download functionality.
+Provides detailed package information display and progress tracking.
 """
 
 from PyQt6.QtWidgets import (

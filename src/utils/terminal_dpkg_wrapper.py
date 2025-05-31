@@ -1,7 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-终端dpkg命令包装器
-为交互式终端提供跨平台的dpkg命令支持
+创建时间: 2025-05-30
+作者: Evil0ctal
+
+中文介绍:
+终端 dpkg 命令包装器，为交互式终端提供跨平台的 dpkg 命令支持。
+在 Windows 平台上使用纯 Python 实现模拟 dpkg-deb 命令，支持常用的解包、打包、
+查看信息等操作。完全兼容 dpkg-deb 命令行语法，无需安装额外软件。
+
+英文介绍:
+Terminal dpkg command wrapper providing cross-platform dpkg command support for interactive terminals.
+Uses pure Python implementation to simulate dpkg-deb commands on Windows platform,
+supporting common operations like unpacking, packing, and viewing information.
+Fully compatible with dpkg-deb command line syntax without requiring additional software installation.
 """
 
 import os

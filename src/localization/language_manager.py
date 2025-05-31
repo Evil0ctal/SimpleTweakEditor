@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-语言管理器模块
-负责管理应用程序的多语言支持
+创建时间: 2025-05-25
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 语言管理器模块
+负责管理应用程序的多语言支持，自动检测系统语言并提供切换功能
+
+英文介绍:
+SimpleTweakEditor Language Manager Module
+Manages multi-language support, auto-detects system language and provides switching functionality
 """
 
 import locale

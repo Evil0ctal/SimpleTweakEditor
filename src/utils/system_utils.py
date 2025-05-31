@@ -1,7 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-系统工具模块
-包含与操作系统相关的工具函数
+创建时间: 2025-05-24
+作者: Evil0ctal
+
+中文介绍:
+系统工具模块，提供与操作系统相关的实用函数。
+包含文件和文件夹操作、权限设置、dpkg 检测、包信息提取等功能。
+支持跨平台操作，在 Windows、macOS 和 Linux 上提供统一的接口。
+
+英文介绍:
+System utilities module providing operating system related utility functions.
+Includes file and folder operations, permission settings, dpkg detection,
+package information extraction and other features.
+Supports cross-platform operations with unified interface on Windows, macOS and Linux.
 """
 
 import os

@@ -1,7 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-文件操作工具模块
-包含解包和打包.deb文件的核心功能
+创建时间: 2025-05-24
+作者: Evil0ctal
+
+中文介绍:
+文件操作工具模块，提供 SimpleTweakEditor 的核心功能。
+包含 .deb 文件的解包和打包功能，支持跨平台操作，自动选择最佳处理器。
+提供批量处理、control 文件验证、目录结构生成等实用功能。
+
+英文介绍:
+File operations utility module providing core functionality for SimpleTweakEditor.
+Includes unpacking and packing functions for .deb files with cross-platform support
+and automatic selection of the best handler.
+Provides batch processing, control file validation, directory structure generation
+and other practical features.
 """
 
 import os

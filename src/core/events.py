@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-自定义事件类模块
-定义应用程序中使用的各种自定义事件
+创建时间: 2025-05-24
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 自定义事件系统
+定义应用程序中使用的各种自定义事件，实现线程安全的消息传递
+
+英文介绍:
+SimpleTweakEditor Custom Event System
+Defines custom events used in the application for thread-safe message passing
 """
 
 from PyQt6.QtCore import QEvent

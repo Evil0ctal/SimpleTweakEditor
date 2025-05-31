@@ -1,7 +1,18 @@
+# -*- coding: utf-8 -*-
 """
-Pure Python implementation of dpkg-deb functionality.
-Provides cross-platform .deb package handling without external dependencies.
-Compatible with dpkg-deb command line interface.
+创建时间: 2025-05-29
+作者: Evil0ctal
+
+中文介绍:
+纯 Python 实现的 dpkg-deb 功能模块，为 Windows 平台提供 .deb 包处理支持。
+无需外部依赖，完全兼容 dpkg-deb 命令行接口，支持解包、打包、查看信息等核心功能。
+处理 AR 归档格式和 tar 压缩，支持 gz、xz、lzma 等多种压缩格式。
+
+英文介绍:
+Pure Python implementation of dpkg-deb functionality providing .deb package support for Windows platform.
+Requires no external dependencies and is fully compatible with dpkg-deb command line interface.
+Supports core functions including unpacking, packing, and information viewing.
+Handles AR archive format and tar compression with support for gz, xz, lzma and other compression formats.
 """
 
 import gzip

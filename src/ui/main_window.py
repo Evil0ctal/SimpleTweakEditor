@@ -1,7 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-主窗口UI模块
-包含应用程序的主用户界面
+创建时间: 2024-11-22
+作者: Evil0ctal
+
+中文介绍:
+主窗口UI模块，包含应用程序的主用户界面。
+实现了选项卡式界面，包括deb工具、插件管理器、软件源管理和命令工具。
+支持多语言、主题切换、拖放操作等核心功能。
+
+英文介绍:
+Main window UI module containing the application's main user interface.
+Implements a tabbed interface including deb tools, package manager, repository manager, and command tools.
+Supports multi-language, theme switching, drag-and-drop operations, and other core features.
 """
 
 import os

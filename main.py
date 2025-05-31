@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-iOS .deb Tweak Editor - Main Entry Point
-A secure tool for iOS .deb package manipulation
+创建时间: 2025-05-24
+作者: Evil0ctal
 
-Author: Evil0ctal
-License: Apache 2.0
+中文介绍:
+SimpleTweakEditor 主程序入口
+提供 iOS .deb 包编辑器的启动和命令行接口
+支持 GUI 和命令行两种运行模式
+
+英文介绍:
+SimpleTweakEditor Main Entry Point
+Provides startup and command-line interface for iOS .deb package editor
+Supports both GUI and command-line operation modes
 """
 
 import argparse

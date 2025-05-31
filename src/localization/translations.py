@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-翻译数据模块
-包含所有支持语言的翻译文本
+创建时间: 2025-05-25
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 翻译数据模块
+包含所有支持语言的翻译文本，提供中英文界面文字资源
+
+英文介绍:
+SimpleTweakEditor Translation Data Module
+Contains translation texts for all supported languages, provides Chinese and English UI text resources
 """
 
 

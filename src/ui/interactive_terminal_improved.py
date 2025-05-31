@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-改进的交互式终端组件
-提供真正的终端交互体验，类似于 macOS Terminal 或 SSH 工具
+创建时间: 2025-05-28
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 改进的交互式终端组件
+提供真正的终端交互体验，类似于 macOS Terminal 或 SSH 工具，支持 PTY
+
+英文介绍:
+SimpleTweakEditor Improved Interactive Terminal Component
+Provides real terminal interaction experience like macOS Terminal or SSH tools with PTY support
 """
 
 import os

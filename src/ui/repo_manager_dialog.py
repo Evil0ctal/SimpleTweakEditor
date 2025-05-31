@@ -1,6 +1,17 @@
+# -*- coding: utf-8 -*-
 """
-软件源管理器对话框
-提供添加、编辑、删除软件源的界面
+创建时间: 2024-11-22
+作者: Evil0ctal
+
+中文介绍:
+软件源管理器对话框模块，提供软件源管理功能。
+支持添加、编辑、删除软件源，以及批量导入导出。
+实现了软件源刷新、启用/禁用和双击浏览等功能。
+
+英文介绍:
+Repository manager dialog module providing software repository management functionality.
+Supports adding, editing, deleting repositories, as well as batch import/export.
+Implements repository refresh, enable/disable, and double-click browsing features.
 """
 
 from PyQt6.QtWidgets import (

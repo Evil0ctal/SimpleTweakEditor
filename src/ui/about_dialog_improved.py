@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-改进的关于对话框模块
-支持暗色模式的交互式关于信息展示
+创建时间: 2025-05-26
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 关于对话框
+支持暗色模式的交互式关于信息展示，包含版本信息和项目链接
+
+英文介绍:
+SimpleTweakEditor About Dialog
+Interactive about dialog with dark mode support, contains version info and project links
 """
 
 import os

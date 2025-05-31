@@ -1,6 +1,15 @@
+# -*- coding: utf-8 -*-
 """
-Cydia/Sileo Repository Manager
-管理插件源，解析Packages文件，下载deb包
+创建时间: 2025-05-27
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 软件源管理器
+管理 Cydia/Sileo 插件源，解析 Packages 文件，提供 deb 包下载功能
+
+英文介绍:
+SimpleTweakEditor Repository Manager
+Manages Cydia/Sileo repositories, parses Packages files, provides deb package download functionality
 """
 
 import os

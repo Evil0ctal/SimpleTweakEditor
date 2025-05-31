@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-交互式终端组件
-提供完整的终端功能和快捷命令支持
+创建时间: 2025-05-27
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 交互式终端组件
+提供完整的终端功能和快捷命令支持，支持多标签页和命令历史
+
+英文介绍:
+SimpleTweakEditor Interactive Terminal Component
+Provides full terminal functionality with quick commands, multi-tab support and command history
 """
 
 import os

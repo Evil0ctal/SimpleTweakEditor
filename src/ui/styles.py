@@ -1,7 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-样式管理模块
-负责管理应用程序的样式和主题
+创建时间: 2024-11-22
+作者: Evil0ctal
+
+中文介绍:
+样式管理模块，负责管理应用程序的样式和主题。
+集成qt-material主题库，支持多种深色/浅色Material Design主题。
+提供自动模式、主题切换、自定义样式等功能。
+
+英文介绍:
+Style management module responsible for managing application styles and themes.
+Integrates qt-material theme library, supporting various dark/light Material Design themes.
+Provides automatic mode, theme switching, and custom styling functionality.
 """
 
 from PyQt6.QtGui import QPalette, QColor

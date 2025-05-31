@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-应用程序核心模块
-包含主要的业务逻辑和事件处理
+创建时间: 2025-05-24
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 应用程序核心模块
+包含主要的业务逻辑、事件处理和应用程序生命周期管理
+
+英文介绍:
+SimpleTweakEditor Application Core Module
+Contains main business logic, event handling and application lifecycle management
 """
 
 import os

@@ -1,7 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-命令执行线程模块
-负责在后台执行命令行操作
+创建时间: 2025-05-24
+作者: Evil0ctal
+
+中文介绍:
+命令执行线程模块。实现了用于在后台执行命令行操作的线程类，包括CommandThread（通用命令执行）、
+UnpackThread（解包操作）和PackThread（打包操作）。这些线程类使用PyQt的信号机制与主UI线程
+通信，提供实时输出反馈和操作结果通知。
+
+英文介绍:
+Command execution thread module. Implements thread classes for executing command-line operations 
+in the background, including CommandThread (general command execution), UnpackThread (unpack 
+operations), and PackThread (pack operations). These thread classes use PyQt's signal mechanism 
+to communicate with the main UI thread, providing real-time output feedback and operation result 
+notifications.
 """
 
 import subprocess

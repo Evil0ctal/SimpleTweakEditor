@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-配置管理模块
-负责保存和加载用户配置
+创建时间: 2025-05-24
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 配置管理模块
+负责保存和加载用户配置，管理应用程序偏好设置
+
+英文介绍:
+SimpleTweakEditor Configuration Management Module
+Handles saving and loading user configurations, manages application preferences
 """
 
 import os

@@ -1,6 +1,17 @@
+# -*- coding: utf-8 -*-
 """
-插件管理器 - 整合的包管理界面
-集成了包浏览、下载和源管理功能
+创建时间: 2024-11-22
+作者: Evil0ctal
+
+中文介绍:
+插件管理器模块，提供整合的包管理界面。
+集成了包浏览、搜索、分类、批量下载和源管理功能。
+采用虚拟化渲染和多线程加载，支持大量包数据的高效显示。
+
+英文介绍:
+Package manager module providing an integrated package management interface.
+Integrates package browsing, search, categorization, batch download, and repository management.
+Uses virtualized rendering and multi-threaded loading for efficient display of large package datasets.
 """
 
 from PyQt6.QtWidgets import (

@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+创建时间: 2025-05-30
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor 通用构建脚本
+自动检测操作系统平台并构建对应格式的可执行文件
+支持 Windows (.exe)、macOS (.app) 和 Linux (AppImage) 平台
+
+英文介绍:
 SimpleTweakEditor Universal Build Script
-通用构建脚本 - 自动检测平台并构建对应格式
-
-支持平台:
-- Windows: PyInstaller 可执行文件 (.exe)
-- macOS: PyInstaller 可执行文件 + .app bundle
-- Linux: PyInstaller 可执行文件 + AppImage
-
-Author: Evil0ctal
-Version: 1.0.0
+Automatically detects OS platform and builds corresponding executable format
+Supports Windows (.exe), macOS (.app), and Linux (AppImage) platforms
 """
 
 import os

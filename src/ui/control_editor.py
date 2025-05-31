@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Control文件编辑器模块
-提供DEBIAN/control文件的编辑和验证功能
+创建时间: 2025-05-24
+作者: Evil0ctal
+
+中文介绍:
+SimpleTweakEditor Control文件编辑器
+提供 DEBIAN/control 文件的编辑和验证功能，支持语法高亮和实时验证
+
+英文介绍:
+SimpleTweakEditor Control File Editor
+Provides DEBIAN/control file editing and validation with syntax highlighting and real-time validation
 """
 
 from PyQt6.QtGui import QFont
