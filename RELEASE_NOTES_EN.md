@@ -6,6 +6,57 @@ English | [中文](RELEASE_NOTES.md)
 
 </div>
 
+## 📝 v1.0.3 (2025-06-01)
+
+### Plist Editor & Project Optimization
+
+This release brings a brand new Plist editor, project structure cleanup, and documentation support for future AI-assisted development.
+
+#### 🆕 Major New Features
+- **Full-Featured Plist Editor** - Supports both tree view and text editing modes
+  - Complete support for all plist data types (dictionary, array, string, number, boolean, data, date)
+  - Syntax highlighting (XML and text formats)
+  - Undo/redo functionality (Ctrl+Z/Ctrl+Y)
+  - Drag-and-drop support - Drop .plist files directly into editor
+  - Right-click context menu - Quick add/delete/modify items
+  - Key-value editor - More intuitive property editing
+  - Data validation - Real-time input validity checking
+
+#### 🧹 Project Cleanup & Optimization
+- **Test File Cleanup** - Removed all legacy test files
+  - Removed debug_array.plist, test_*.plist and other test files
+  - Deleted test_data/ directory
+  - Cleaned up __pycache__ and .DS_Store files
+  
+- **Documentation Reorganization** - All docs moved to docs/ directory
+  - Moved SECURITY_*.md files to docs/
+  - Unified documentation management structure
+  - Updated .gitignore to prevent test file commits
+
+#### 🌍 Localization Improvements
+- **Eliminated Hardcoded Chinese** - Fixed all hardcoded Chinese strings
+  - RepoRefreshWorker now properly uses language manager
+  - All package manager UI text is localized
+  - Download progress and status messages support multiple languages
+
+#### 🔐 Security Enhancements
+- **Enhanced Path Traversal Protection** - Improved path validation logic
+- **File Size Validation** - Plist editor limits file size (max 100MB)
+- **Secure File Operations** - All file operations go through security validation
+
+#### 🔧 Technical Improvements
+- **Code Quality** - Unified file header format and comment standards
+- **Error Handling** - Improved exception handling with user-friendly error messages
+- **Performance Optimization** - Plist editor uses efficient tree rendering
+- **UI Consistency** - All new components follow existing design language
+
+### Developer Notes
+- Added CLAUDE.md providing comprehensive development guidance
+- Improved project structure documentation
+- Clearer code organization and module separation
+
+---
+
 ## 🪟 v1.0.2 (2025-05-30)
 
 ### Windows Platform Support & Interactive Terminal Enhancement

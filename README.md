@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.2-blue?style=for-the-badge&logo=apple&logoColor=white)
+![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.3-blue?style=for-the-badge&logo=apple&logoColor=white)
 
 [![License](https://img.shields.io/github/license/Evil0ctal/SimpleTweakEditor?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -77,6 +77,13 @@
 - **智能提示** - 自动补全包名、版本号等信息
 - **模板支持** - 内置常用Control文件模板
 
+### 📄 Plist编辑器
+- **双模式编辑** - 树形视图和文本编辑模式随意切换
+- **完整数据类型** - 支持字典、数组、字符串、数字、布尔值、数据、日期
+- **语法高亮** - XML和文本格式的智能语法高亮
+- **撤销/重做** - 完整的编辑历史记录（Ctrl+Z/Ctrl+Y）
+- **拖放编辑** - 直接拖放.plist文件到编辑器打开
+
 ### 📱 软件包管理器
 - **多源支持** - 集成BigBoss、Chariz、Packix等主流iOS软件源
 - **包浏览器** - 按分类浏览和搜索数千个iOS插件包
@@ -141,10 +148,10 @@ sudo apt-get install dpkg
 
 | 平台 | 文件名 | 说明 |
 |------|--------|------|
-| **Windows** | `SimpleTweakEditor-v1.0.2-Windows-x64.zip` | 解压即用，无需安装 |
-| **macOS Intel** | `SimpleTweakEditor-v1.0.2-macOS-x64.zip` | Intel芯片Mac |
-| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.2-macOS-Apple-Silicon.zip` | M1/M2/M3芯片Mac |
-| **Linux** | `SimpleTweakEditor-v1.0.2-Linux-x64.zip` | 支持大多数Linux发行版 |
+| **Windows** | `SimpleTweakEditor-v1.0.3-Windows-x64.zip` | 解压即用，无需安装 |
+| **macOS Intel** | `SimpleTweakEditor-v1.0.3-macOS-x64.zip` | Intel芯片Mac |
+| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.3-macOS-Apple-Silicon.zip` | M1/M2/M3芯片Mac |
+| **Linux** | `SimpleTweakEditor-v1.0.3-Linux-x64.zip` | 支持大多数Linux发行版 |
 
 #### 从源代码运行 / Run from Source
 ```bash
@@ -285,7 +292,23 @@ python build.py
 
 ## 📋 更新日志
 
-### 🆕 v1.0.2 (2025-05-30) - Windows全面支持与终端增强
+### 🆕 v1.0.3 (2025-06-01) - Plist编辑器与项目优化
+**重要更新：全新Plist编辑器和项目结构优化！**
+- 📝 **全功能Plist编辑器** 
+  - 支持树形视图和文本编辑两种模式
+  - 完整支持所有plist数据类型
+  - 语法高亮、撤销/重做、拖放支持
+  - 右键菜单快速编辑
+- 🧹 **项目清理优化**
+  - 删除所有测试文件和临时文件
+  - 文档重组至docs目录
+  - 更新.gitignore防止测试文件提交
+- 🌍 **本地化完善**
+  - 修复所有硬编码中文字符串
+  - 软件包管理器UI完全本地化
+  - 状态消息支持多语言
+
+### v1.0.2 (2025-05-30) - Windows全面支持与终端增强
 **重大更新：完整的Windows支持和交互式终端修复！**
 - 🪟 **Windows原生支持** 
   - 纯Python实现dpkg功能，无需WSL或Cygwin

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.2-blue?style=for-the-badge&logo=apple&logoColor=white)
+![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.3-blue?style=for-the-badge&logo=apple&logoColor=white)
 
 [![License](https://img.shields.io/github/license/Evil0ctal/SimpleTweakEditor?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -77,6 +77,13 @@
 - **Auto-completion** - Smart suggestions for package names and versions
 - **Template Support** - Built-in templates for common Control files
 
+### 📄 Plist Editor
+- **Dual Mode Editing** - Switch between tree view and text editing modes
+- **Complete Data Types** - Supports dictionary, array, string, number, boolean, data, date
+- **Syntax Highlighting** - Smart highlighting for XML and text formats
+- **Undo/Redo** - Full edit history (Ctrl+Z/Ctrl+Y)
+- **Drag & Drop** - Drop .plist files directly into editor
+
 ### 📱 Package Manager
 - **Multi-Source Support** - Integrated BigBoss, Chariz, Packix and major iOS repos
 - **Package Browser** - Browse and search thousands of iOS tweaks by category
@@ -116,10 +123,10 @@ Download the version for your system from [Releases](https://github.com/Evil0cta
 
 | Platform | Filename | Description |
 |----------|----------|-------------|
-| **Windows** | `SimpleTweakEditor-v1.0.2-Windows-x64.zip` | Extract and run, no installation |
-| **macOS Intel** | `SimpleTweakEditor-v1.0.2-macOS-x64.zip` | For Intel-based Macs |
-| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.2-macOS-Apple-Silicon.zip` | For M1/M2/M3 Macs |
-| **Linux** | `SimpleTweakEditor-v1.0.2-Linux-x64.zip` | Works on most Linux distributions |
+| **Windows** | `SimpleTweakEditor-v1.0.3-Windows-x64.zip` | Extract and run, no installation |
+| **macOS Intel** | `SimpleTweakEditor-v1.0.3-macOS-x64.zip` | For Intel-based Macs |
+| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.3-macOS-Apple-Silicon.zip` | For M1/M2/M3 Macs |
+| **Linux** | `SimpleTweakEditor-v1.0.3-Linux-x64.zip` | Works on most Linux distributions |
 
 #### Run from Source
 ```bash
@@ -227,7 +234,23 @@ A: Install Python dependencies: `pip3 install PyQt6 Pillow`
 
 ## 📝 Changelog
 
-### 🆕 v1.0.2 (2025-05-30) - Full Windows Support & Terminal Enhancement
+### 🆕 v1.0.3 (2025-06-01) - Plist Editor & Project Optimization
+**Major Update: New Plist Editor and Project Structure Optimization!**
+- 📝 **Full-Featured Plist Editor** 
+  - Dual mode: tree view and text editing
+  - Complete support for all plist data types
+  - Syntax highlighting, undo/redo, drag & drop support
+  - Right-click context menu for quick editing
+- 🧹 **Project Cleanup**
+  - Removed all test files and temporary files
+  - Documentation reorganized into docs directory
+  - Updated .gitignore to prevent test file commits
+- 🌍 **Localization Improvements**
+  - Fixed all hardcoded Chinese strings
+  - Package manager UI fully localized
+  - Status messages support multiple languages
+
+### v1.0.2 (2025-05-30) - Full Windows Support & Terminal Enhancement
 **Major Update: Complete Windows Support and Interactive Terminal Fixes!**
 - 🪟 **Native Windows Support**
   - Pure Python dpkg implementation, no WSL or Cygwin needed

@@ -13,7 +13,7 @@ Centralized version number management with version information query interface
 """
 
 # 应用程序版本号 - 修改此处即可更新所有相关版本显示
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
 
 
 # 获取版本号的函数
