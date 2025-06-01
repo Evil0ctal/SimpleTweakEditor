@@ -229,30 +229,47 @@ class UniversalBuilder:
             icon_dst = resources_path / f"{self.app_name}.icns"
             shutil.copy2(icon_src, icon_dst)
             
-        # 创建 Info.plist
-        info_plist = {
-            "CFBundleDevelopmentRegion": "en",
-            "CFBundleExecutable": self.app_name,
-            "CFBundleIconFile": f"{self.app_name}.icns",
-            "CFBundleIdentifier": f"com.evil0ctal.{self.app_name}",
-            "CFBundleInfoDictionaryVersion": "6.0",
-            "CFBundleName": self.app_name,
-            "CFBundlePackageType": "APPL",
-            "CFBundleShortVersionString": self.version,
-            "CFBundleVersion": self.version,
-            "LSMinimumSystemVersion": "10.13",
-            "NSHighResolutionCapable": True,
-            "NSRequiresAquaSystemAppearance": False,
-            "CFBundleDisplayName": "SimpleTweakEditor",
-            "CFBundleDocumentTypes": [
-                {
-                    "CFBundleTypeExtensions": ["deb"],
-                    "CFBundleTypeName": "Debian Package",
-                    "CFBundleTypeRole": "Editor",
-                    "LSHandlerRank": "Owner"
-                }
-            ]
-        }
+        # 检查是否有 Info.plist 模板
+        template_path = self.project_root / "Info.plist.template"
+        if template_path.exists():
+            # 使用模板
+            with open(template_path, 'rb') as f:
+                info_plist = plistlib.load(f)
+            # 更新版本号
+            info_plist["CFBundleShortVersionString"] = self.version
+            info_plist["CFBundleVersion"] = self.version
+        else:
+            # 创建默认 Info.plist
+            info_plist = {
+                "CFBundleDevelopmentRegion": "en",
+                "CFBundleExecutable": self.app_name,
+                "CFBundleIconFile": f"{self.app_name}.icns",
+                "CFBundleIdentifier": f"com.evil0ctal.{self.app_name}",
+                "CFBundleInfoDictionaryVersion": "6.0",
+                "CFBundleName": self.app_name,
+                "CFBundlePackageType": "APPL",
+                "CFBundleShortVersionString": self.version,
+                "CFBundleVersion": self.version,
+                "LSMinimumSystemVersion": "10.13",
+                "NSHighResolutionCapable": True,
+                "NSRequiresAquaSystemAppearance": False,
+                "CFBundleDisplayName": "SimpleTweakEditor",
+                "CFBundleDocumentTypes": [
+                    {
+                        "CFBundleTypeExtensions": ["deb"],
+                        "CFBundleTypeName": "Debian Package",
+                        "CFBundleTypeRole": "Editor",
+                        "LSHandlerRank": "Owner"
+                    },
+                    {
+                        "CFBundleTypeExtensions": ["plist"],
+                        "CFBundleTypeName": "Property List",
+                        "CFBundleTypeRole": "Editor",
+                        "LSHandlerRank": "Alternate",
+                        "LSItemContentTypes": ["com.apple.property-list"]
+                    }
+                ]
+            }
         
         plist_path = contents_path / "Info.plist"
         with open(plist_path, 'wb') as f:

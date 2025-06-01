@@ -29,12 +29,13 @@ class DownloadWorker(QThread):
     status = pyqtSignal(str)  # 状态信息
     finished = pyqtSignal(bool, str)  # 成功标志, 文件路径或错误信息
     
-    def __init__(self, repo_manager, repo_url: str, package, download_path: str):
+    def __init__(self, repo_manager, repo_url: str, package, download_path: str, lang_mgr=None):
         super().__init__()
         self.repo_manager = repo_manager
         self.repo_url = repo_url
         self.package = package
         self.download_path = download_path
+        self.lang_mgr = lang_mgr
         self._is_cancelled = False
         
         print(f"[DEBUG] DownloadWorker initialized for {package.package}")
@@ -42,7 +43,8 @@ class DownloadWorker(QThread):
     def run(self):
         """执行下载任务"""
         try:
-            self.status.emit(f"开始下载 {self.package.get_display_name()}...")
+            status_msg = self.lang_mgr.format_text("start_downloading", self.package.get_display_name()) if self.lang_mgr else f"Starting download {self.package.get_display_name()}..."
+            self.status.emit(status_msg)
             
             # 确保下载目录存在
             Path(self.download_path).mkdir(parents=True, exist_ok=True)
@@ -56,12 +58,13 @@ class DownloadWorker(QThread):
             )
             
             if self._is_cancelled:
-                self.finished.emit(False, "下载已取消")
+                cancel_msg = self.lang_mgr.get_text("download_cancelled") if self.lang_mgr else "Download cancelled"
+                self.finished.emit(False, cancel_msg)
             else:
                 self.finished.emit(success, result)
                 
         except Exception as e:
-            error_msg = f"下载出错: {str(e)}"
+            error_msg = self.lang_mgr.format_text("download_error", str(e)) if self.lang_mgr else f"Download error: {str(e)}"
             print(f"[ERROR] {error_msg}")
             self.finished.emit(False, error_msg)
     
@@ -73,7 +76,7 @@ class DownloadWorker(QThread):
             # 格式化进度信息
             downloaded_mb = downloaded / (1024 * 1024)
             total_mb = total / (1024 * 1024)
-            status_msg = f"正在下载... {downloaded_mb:.1f}/{total_mb:.1f} MB ({percent}%)"
+            status_msg = self.lang_mgr.format_text("downloading_progress", downloaded_mb, total_mb, percent) if self.lang_mgr else f"Downloading... {downloaded_mb:.1f}/{total_mb:.1f} MB ({percent}%)"
             self.status.emit(status_msg)
     
     def cancel(self):
@@ -91,7 +94,7 @@ class BatchDownloadWorker(QThread):
     package_finished = pyqtSignal(str, bool, str)  # 包名, 成功标志, 结果信息
     all_finished = pyqtSignal(int, int)  # 成功数, 失败数
     
-    def __init__(self, repo_manager, download_tasks, download_path: str):
+    def __init__(self, repo_manager, download_tasks, download_path: str, lang_mgr=None):
         """
         download_tasks: List[Tuple[repo_url, package]]
         """
@@ -99,6 +102,7 @@ class BatchDownloadWorker(QThread):
         self.repo_manager = repo_manager
         self.download_tasks = download_tasks
         self.download_path = download_path
+        self.lang_mgr = lang_mgr
         self._is_cancelled = False
         
         print(f"[DEBUG] BatchDownloadWorker initialized with {len(download_tasks)} tasks")
@@ -140,7 +144,7 @@ class BatchDownloadWorker(QThread):
                     
             except Exception as e:
                 failed_count += 1
-                error_msg = f"下载出错: {str(e)}"
+                error_msg = self.lang_mgr.format_text("download_error", str(e)) if self.lang_mgr else f"Download error: {str(e)}"
                 print(f"[ERROR] {error_msg}")
                 self.package_finished.emit(package_name, False, error_msg)
         
@@ -161,33 +165,52 @@ class RepoRefreshWorker(QThread):
     status = pyqtSignal(str, int, int)  # 状态信息, 当前数, 总数
     finished = pyqtSignal(bool, str)  # 成功标志, 信息
     
-    def __init__(self, repo_manager, repos_to_refresh=None):
+    def __init__(self, repo_manager, repos_to_refresh=None, lang_mgr=None):
         super().__init__()
         self.repo_manager = repo_manager
         self.repos_to_refresh = repos_to_refresh  # None表示刷新所有
+        self.lang_mgr = lang_mgr
         
     def run(self):
         """执行刷新任务"""
         try:
             if self.repos_to_refresh is None:
                 # 刷新所有源
-                self.repo_manager.refresh_all_repos(
-                    progress_callback=lambda msg, current, total: 
-                        self.status.emit(msg, current, total)
-                )
-                self.finished.emit(True, "所有软件源刷新完成")
+                # 定义进度回调，格式化消息
+                def progress_callback(msg, current, total):
+                    # msg 来自 repo_manager，包含 "正在刷新 {repo.name}..."
+                    # 我们需要提取 repo name 并重新格式化
+                    if self.lang_mgr and "正在刷新" in msg:
+                        # 提取 repo name
+                        import re
+                        match = re.search(r'正在刷新 (.+)\.\.\.$', msg)
+                        if match:
+                            repo_name = match.group(1)
+                            formatted_msg = self.lang_mgr.format_text("refreshing_repo", repo_name)
+                        else:
+                            formatted_msg = msg
+                    else:
+                        # 英文环境或无法解析，直接使用原消息
+                        formatted_msg = msg
+                    self.status.emit(formatted_msg, current, total)
+                
+                self.repo_manager.refresh_all_repos(progress_callback=progress_callback)
+                msg = self.lang_mgr.get_text("all_repos_refreshed") if self.lang_mgr else "All repositories refreshed"
+                self.finished.emit(True, msg)
             else:
                 # 刷新指定源
                 total = len(self.repos_to_refresh)
                 for i, repo_url in enumerate(self.repos_to_refresh):
                     repo = self.repo_manager.get_repository(repo_url)
                     if repo:
-                        self.status.emit(f"正在刷新 {repo.name}...", i + 1, total)
+                        status_msg = self.lang_mgr.format_text("refreshing_repo", repo.name) if self.lang_mgr else f"Refreshing {repo.name}..."
+                        self.status.emit(status_msg, i + 1, total)
                         self.repo_manager.fetch_packages(repo_url, force_refresh=True)
                 
-                self.finished.emit(True, f"已刷新 {total} 个软件源")
+                msg = self.lang_mgr.format_text("n_repos_refreshed", total) if self.lang_mgr else f"Refreshed {total} repositories"
+                self.finished.emit(True, msg)
                 
         except Exception as e:
-            error_msg = f"刷新失败: {str(e)}"
+            error_msg = self.lang_mgr.format_text("refresh_failed_with_error", str(e)) if self.lang_mgr else f"Refresh failed: {str(e)}"
             print(f"[ERROR] {error_msg}")
             self.finished.emit(False, error_msg)

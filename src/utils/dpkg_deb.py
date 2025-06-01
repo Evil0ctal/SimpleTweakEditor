@@ -24,8 +24,22 @@ import struct
 import tarfile
 import tempfile
 import platform
+import os
 from pathlib import Path
 from typing import Optional, Dict
+
+# 安全导入 - 如果security模块存在则使用，否则使用基本验证
+try:
+    from .security import is_safe_archive_member, secure_path_join
+    SECURITY_MODULE_AVAILABLE = True
+except ImportError:
+    SECURITY_MODULE_AVAILABLE = False
+    
+    def is_safe_archive_member(member_name: str, extract_to: str) -> bool:
+        """基本的安全检查"""
+        if '..' in member_name or member_name.startswith('/'):
+            return False
+        return True
 
 logger = logging.getLogger(__name__)
 
@@ -141,12 +155,17 @@ class DpkgDeb:
                     if safe_extract:
                         # Safe extraction with path traversal protection
                         for member in tar.getmembers():
-                            # Resolve the full path and ensure it's within output_dir
+                            # 使用安全检查函数
+                            if not is_safe_archive_member(member.name, str(output_dir)):
+                                logger.warning(f"Skipping potentially unsafe path: {member.name}")
+                                continue
+                            
+                            # 额外的安全检查
                             member_path = (output_dir / member.name).resolve()
                             try:
                                 member_path.relative_to(output_dir.resolve())
                             except ValueError:
-                                logger.warning(f"Skipping potentially unsafe path: {member.name}")
+                                logger.warning(f"Path traversal detected, skipping: {member.name}")
                                 continue
                             
                             # Extract this member

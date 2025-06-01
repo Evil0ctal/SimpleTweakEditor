@@ -719,7 +719,7 @@ class RepoManagerDialog(QDialog):
         
         # 导入并创建工作线程
         from src.workers.download_thread import RepoRefreshWorker
-        self.refresh_worker = RepoRefreshWorker(self.repo_manager, repos_to_refresh)
+        self.refresh_worker = RepoRefreshWorker(self.repo_manager, repos_to_refresh, self.lang_mgr)
         self.refresh_worker.status.connect(self.on_refresh_status)
         self.refresh_worker.finished.connect(self.on_refresh_finished)
         self.refresh_worker.start()

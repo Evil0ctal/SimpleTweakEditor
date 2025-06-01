@@ -13,8 +13,10 @@ Contains main business logic, event handling and application lifecycle managemen
 """
 
 import os
+import threading
 
 from PyQt6.QtWidgets import QFileDialog, QMessageBox
+from PyQt6.QtCore import QMutex, QMutexLocker
 
 from src.localization.language_manager import LanguageManager
 from src.ui.control_editor import ControlEditorDialog
@@ -48,8 +50,9 @@ class TweakEditorApp:
         # 调试模式
         self.debug_mode = self.config_mgr.get_debug_mode()
 
-        # 操作状态
-        self.is_operation_running = False
+        # 操作状态 - 添加线程安全保护
+        self._operation_mutex = QMutex()
+        self._is_operation_running = False
         self.current_operation_thread = None
 
         # 创建主窗口
@@ -97,6 +100,9 @@ class TweakEditorApp:
         if os.path.isfile(path):
             if is_valid_deb_file(path):
                 self.process_deb_file(path)
+            elif path.lower().endswith('.plist'):
+                # 处理 plist 文件
+                self.process_plist_file(path)
             else:
                 error_msg = self.lang_mgr.format_text("unsupported_file", path)
                 self.log(error_msg, "error")
@@ -118,6 +124,26 @@ class TweakEditorApp:
                 )
         else:
             self.log(self.lang_mgr.format_text("unsupported_file", path), "error")
+    
+    def process_plist_file(self, path):
+        """处理 plist 文件"""
+        self.log(f"Opening plist file: {path}", "info")
+        
+        # 打开 Plist 编辑器
+        if hasattr(self.main_window, 'open_plist_editor'):
+            self.main_window.open_plist_editor()
+            
+            # 如果编辑器成功打开，加载文件
+            if hasattr(self.main_window, 'plist_editor') and self.main_window.plist_editor:
+                try:
+                    self.main_window.plist_editor.load_file(path)
+                except Exception as e:
+                    self.log(f"Failed to load plist file: {e}", "error")
+                    QMessageBox.critical(
+                        self.main_window,
+                        self.lang_mgr.get_text("error"),
+                        f"Failed to load plist file: {str(e)}"
+                    )
 
     def process_deb_file(self, deb_path):
         """处理.deb文件 - 提示解包"""
@@ -421,16 +447,32 @@ class TweakEditorApp:
         self.debug_print("Operation ended")
 
     def stop_current_operation(self):
-        """停止当前操作"""
-        if self.current_operation_thread and self.current_operation_thread.isRunning():
-            self.current_operation_thread.stop()
-            self.current_operation_thread.wait()
-            self.end_operation()
+        """停止当前操作 - 线程安全版本"""
+        with QMutexLocker(self._operation_mutex):
+            if self.current_operation_thread and self.current_operation_thread.isRunning():
+                self.current_operation_thread.stop()
+                # 等待线程结束，但设置超时防止死锁
+                if not self.current_operation_thread.wait(10000):  # 10秒超时
+                    print("Warning: Thread did not stop gracefully")
+                    
+        self.end_operation()
 
     def toggle_debug_mode(self):
         """切换调试模式"""
         self.debug_mode = not self.debug_mode
         self.config_mgr.set_debug_mode(self.debug_mode)
+    
+    @property
+    def is_operation_running(self):
+        """线程安全地获取操作状态"""
+        with QMutexLocker(self._operation_mutex):
+            return self._is_operation_running
+    
+    @is_operation_running.setter
+    def is_operation_running(self, value):
+        """线程安全地设置操作状态"""
+        with QMutexLocker(self._operation_mutex):
+            self._is_operation_running = value
 
         status = self.lang_mgr.get_text("debug_enabled" if self.debug_mode else "debug_disabled")
         self.debug_print(status)
@@ -447,6 +489,6 @@ class TweakEditorApp:
 
     def show_about_dialog(self):
         """显示关于对话框"""
-        from src.ui.about_dialog_improved import ImprovedAboutDialog
+        from src.ui.about_dialog import ImprovedAboutDialog
         dialog = ImprovedAboutDialog(self.main_window, self.lang_mgr)
         dialog.exec()

@@ -51,15 +51,28 @@ class Translations:
         "clear_command": "Clear command",
 
         # UI labels
-        "tip_drag_drop": "Tip: Drop a .deb file to unpack, or a folder to repack.",
+        "tip_drag_drop": "Tip: Drop a .deb file to unpack, a folder to repack, or a .plist file to edit.",
         "drop_zone": "🗂 Drag & Drop Area",
-        "drop_zone_hint": "Drop a .deb file to unpack,\nor drop a folder containing DEBIAN/ to repack.",
+        "drop_zone_hint": "Drop a .deb file to unpack,\na folder containing DEBIAN/ to repack,\nor a .plist file to edit.",
         "operation_log": "Operation Log",
         "command_line": "Command Line",
         "quick_commands": "Quick Commands",
         "deb_tools": "Deb Tools",
         "command_tools": "Command Tools",
         "command_output": "Command Output",
+        "plist_editor": "Plist Editor",
+        
+        # Toolbar
+        "main_toolbar": "Main Toolbar",
+        "unpack": "Unpack",
+        "repack": "Repack",
+        "control_editor": "Control Editor",
+        "unpack_tooltip": "Extract deb package contents",
+        "repack_tooltip": "Repackage folder as deb",
+        "plist_editor_tooltip": "Open Plist Editor for property list files",
+        "control_editor_tooltip": "Edit DEBIAN/control metadata",
+        "package_manager_tooltip": "Manage installed packages",
+        "manage_sources_tooltip": "Manage package repositories",
 
         # Quick command presets
         "cmd_preset_title": "--- Quick Commands ---",
@@ -321,7 +334,20 @@ class Translations:
         "cmd_validate_control": "Validate control file",
         "new_terminal": "New Terminal",
         "font_size": "Font Size",
-        "split_terminal": "Split Terminal"
+        "split_terminal": "Split Terminal",
+        "view_n_versions": "View {0} Versions",
+        "search_in_all_repos": "Search in all repositories...",
+        "loading_packages_title": "Loading Packages",
+        "loading_n_packages": "Loading {0} packages, please wait...",
+        "loading_cancelled": "Loading cancelled",
+        "batch_downloading": "Batch downloading ({0}/{1}): {2}",
+        "start_downloading": "Starting download {0}...",
+        "download_cancelled": "Download cancelled",
+        "download_error": "Download error: {0}",
+        "downloading_progress": "Downloading... {0:.1f}/{1:.1f} MB ({2}%)",
+        "all_repos_refreshed": "All repositories refreshed",
+        "n_repos_refreshed": "Refreshed {0} repositories",
+        "refresh_failed_with_error": "Refresh failed: {0}"
     }
 
     ZH = {
@@ -359,15 +385,28 @@ class Translations:
         "clear_command": "清除命令",
 
         # 界面标签
-        "tip_drag_drop": "提示: 将.deb文件拖放到窗口可直接解包，将文件夹拖放可直接打包。",
+        "tip_drag_drop": "提示: 将.deb文件拖放到窗口可直接解包，将文件夹拖放可直接打包，或拖放.plist文件进行编辑。",
         "drop_zone": "🗂 拖放区域",
-        "drop_zone_hint": "拖入 .deb 文件进行解包，\n或拖入包含 DEBIAN/ 的文件夹进行打包。",
+        "drop_zone_hint": "拖入 .deb 文件进行解包，\n拖入包含 DEBIAN/ 的文件夹进行打包，\n或拖入 .plist 文件进行编辑。",
         "operation_log": "操作日志",
         "command_line": "命令行",
         "quick_commands": "快捷命令",
         "deb_tools": "Deb工具",
         "command_tools": "命令工具",
         "command_output": "命令输出",
+        "plist_editor": "Plist编辑器",
+        
+        # 工具栏
+        "main_toolbar": "主工具栏",
+        "unpack": "解包",
+        "repack": "打包",
+        "control_editor": "Control编辑器",
+        "unpack_tooltip": "解压 deb 包内容",
+        "repack_tooltip": "将文件夹重新打包为 deb",
+        "plist_editor_tooltip": "打开 Plist 编辑器编辑属性列表文件",
+        "control_editor_tooltip": "编辑 DEBIAN/control 元数据",
+        "package_manager_tooltip": "管理已安装的包",
+        "manage_sources_tooltip": "管理软件包仓库",
 
         # 快捷命令预设
         "cmd_preset_title": "--- 快捷命令 ---",
@@ -600,6 +639,19 @@ class Translations:
         "downloading_package": "正在下载软件包...",
         "optimizing_packages": "正在优化软件包列表...",
         "sorting_packages": "正在排序软件包列表...",
+        "view_n_versions": "查看 {0} 个版本",
+        "search_in_all_repos": "在所有软件源中搜索...",
+        "loading_packages_title": "加载包列表",
+        "loading_n_packages": "正在加载 {0} 个包，请稍候...",
+        "loading_cancelled": "加载已取消",
+        "batch_downloading": "批量下载中 ({0}/{1}): {2}",
+        "start_downloading": "开始下载 {0}...",
+        "download_cancelled": "下载已取消",
+        "download_error": "下载出错: {0}",
+        "downloading_progress": "正在下载... {0:.1f}/{1:.1f} MB ({2}%)",
+        "all_repos_refreshed": "所有软件源刷新完成",
+        "n_repos_refreshed": "已刷新 {0} 个软件源",
+        "refresh_failed_with_error": "刷新失败: {0}",
         
         # 交互式终端
         "terminal_welcome": "交互式终端已就绪",

@@ -20,7 +20,7 @@ from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QAction, QTextCursor, QActi
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTextEdit, QLineEdit, QGroupBox, QSplitter, QStatusBar, QComboBox, QFileDialog,
-    QMessageBox, QTabWidget, QFrame
+    QMessageBox, QTabWidget, QFrame, QStyle
 )
 
 from .styles import StyleManager
@@ -419,6 +419,13 @@ class MainWindow(QMainWindow):
         repack_action.triggered.connect(self.app_core.repack_folder_dialog)
         file_menu.addAction(repack_action)
 
+        file_menu.addSeparator()
+        
+        # Plist编辑器
+        plist_editor_action = QAction(self.lang_mgr.get_text("plist_editor"), self)
+        plist_editor_action.triggered.connect(self.open_plist_editor)
+        file_menu.addAction(plist_editor_action)
+        
         file_menu.addSeparator()
         
         # 插件管理器（主要功能）
@@ -1353,6 +1360,57 @@ class MainWindow(QMainWindow):
         
         if reply == QMessageBox.StandardButton.Yes:
             self.app_core.process_dropped_item(file_path)
+    
+    def unpack_deb(self):
+        """解包deb文件"""
+        self.app_core.unpack_deb_dialog()
+    
+    def repack_deb(self):
+        """重打包为deb文件"""
+        self.app_core.repack_folder_dialog()
+    
+    def open_control_editor(self):
+        """打开Control编辑器"""
+        try:
+            from src.ui.control_editor import ControlEditorDialog
+            dialog = ControlEditorDialog(self, self.lang_mgr)
+            dialog.exec()
+        except Exception as e:
+            self.log(f"Error opening Control Editor: {str(e)}", "error")
+            QMessageBox.critical(self, self.lang_mgr.get_text("error"), str(e))
+    
+    def open_plist_editor(self):
+        """打开Plist编辑器"""
+        try:
+            # 检查是否已有实例
+            if hasattr(self, 'plist_editor') and self.plist_editor:
+                try:
+                    if self.plist_editor.isVisible():
+                        # 如果窗口已存在且可见，激活它
+                        self.plist_editor.raise_()
+                        self.plist_editor.activateWindow()
+                        return
+                except RuntimeError:
+                    # 窗口已被销毁，清理引用
+                    self.plist_editor = None
+            
+            from src.ui.plist_editor import ImprovedPlistEditor
+            
+            # 创建并显示Plist编辑器，传递语言管理器和样式管理器
+            self.plist_editor = ImprovedPlistEditor(self, self.lang_mgr, self.style_mgr)
+            
+            # 连接关闭信号，清理引用
+            # 当窗口被销毁时清理引用
+            self.plist_editor.destroyed.connect(lambda: setattr(self, 'plist_editor', None))
+            
+            self.plist_editor.show()
+            
+        except ImportError as e:
+            self.log(f"Failed to import Plist Editor: {str(e)}", "error")
+            QMessageBox.critical(self, self.lang_mgr.get_text("error"), str(e))
+        except Exception as e:
+            self.log(f"Error opening Plist Editor: {str(e)}", "error")
+            QMessageBox.critical(self, self.lang_mgr.get_text("error"), str(e))
     
     def open_package_manager(self):
         """打开插件管理器（新的整合界面）"""

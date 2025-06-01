@@ -224,7 +224,7 @@ class PackageDetailWidget(QWidget):
         if package_versions and len(package_versions) > 1:
             self.versions_btn.setVisible(True)
             version_count = len(package_versions)
-            versions_text = f"View {version_count} Versions" if not self.lang_mgr else f"查看 {version_count} 个版本"
+            versions_text = self.lang_mgr.format_text("view_n_versions", version_count) if self.lang_mgr else f"View {version_count} Versions"
             self.versions_btn.setText(versions_text)
         else:
             self.versions_btn.setVisible(False)
@@ -283,13 +283,13 @@ class PackageDetailWidget(QWidget):
         from PyQt6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QDialogButtonBox, QLabel
         
         dialog = QDialog(self)
-        dialog.setWindowTitle("选择版本" if self.lang_mgr else "Select Version")
+        dialog.setWindowTitle(self.lang_mgr.get_text("select_version") if self.lang_mgr else "Select Version")
         dialog.resize(500, 400)
         
         layout = QVBoxLayout()
         
         # 标题
-        title = QLabel(f"{self.current_package.get_display_name()} - 所有版本")
+        title = QLabel(f"{self.current_package.get_display_name()} - {self.lang_mgr.get_text('all_versions') if self.lang_mgr else 'All Versions'}")
         title.setProperty("class", "heading")
         layout.addWidget(title)
         
@@ -633,7 +633,7 @@ class PackageManagerWidget(QDialog):
             toolbar.addWidget(QLabel(search_text))
             
             self.search_input = QLineEdit()
-            search_placeholder = "Search in all repositories..." if not self.lang_mgr else "在所有软件源中搜索..."
+            search_placeholder = self.lang_mgr.get_text("search_in_all_repos") if self.lang_mgr else "Search in all repositories..."
             self.search_input.setPlaceholderText(search_placeholder)
             # 实时搜索 - 当文本改变时触发
             self.search_input.textChanged.connect(self.on_search_text_changed)
@@ -1273,9 +1273,9 @@ class PackageManagerWidget(QDialog):
         """使用线程显示加载对话框并加载所有包"""
         # 创建进度对话框
         if self.lang_mgr:
-            title = "加载包列表"
-            label = f"正在加载 {len(packages)} 个包，请稍候..."
-            cancel_text = "取消"
+            title = self.lang_mgr.get_text("loading_packages_title")
+            label = self.lang_mgr.format_text("loading_n_packages", len(packages))
+            cancel_text = self.lang_mgr.get_text("cancel")
         else:
             title = "Loading Packages"
             label = f"Loading {len(packages)} packages, please wait..."
@@ -1366,14 +1366,14 @@ class PackageManagerWidget(QDialog):
             self.load_worker.cancel()
         progress_dialog.close()
         if hasattr(self, 'status_label'):
-            self.status_label.setText("加载已取消")
+            self.status_label.setText(self.lang_mgr.get_text("loading_cancelled") if self.lang_mgr else "Loading cancelled")
     
     def _cancel_loading(self, progress_dialog):
         """取消加载（旧方法）"""
         self.loading_canceled = True
         progress_dialog.close()
         if hasattr(self, 'status_label'):
-            self.status_label.setText("加载已取消")
+            self.status_label.setText(self.lang_mgr.get_text("loading_cancelled") if self.lang_mgr else "Loading cancelled")
     
     def _load_packages_with_progress(self, list_widget, packages, progress_dialog):
         """带进度的包加载 - 极速优化版"""
@@ -1638,7 +1638,7 @@ class PackageManagerWidget(QDialog):
         # 创建下载任务
         from src.workers.download_thread import DownloadWorker
         self.download_worker = DownloadWorker(
-            self.repo_manager, repo.url, package, self.download_path
+            self.repo_manager, repo.url, package, self.download_path, self.lang_mgr
         )
         self.download_worker.progress.connect(self.on_download_progress)
         self.download_worker.status.connect(self.on_download_status)
@@ -1823,7 +1823,7 @@ class PackageManagerWidget(QDialog):
             self.filter_packages()
             
             # 更新状态
-            msg = f"找到 {len(self.all_packages)} 个匹配的包" if self.lang_mgr else f"Found {len(self.all_packages)} matching packages"
+            msg = self.lang_mgr.format_text("found_packages", len(self.all_packages)) if self.lang_mgr else f"Found {len(self.all_packages)} matching packages"
             self.status_label.setText(msg)
             
             # 清空源筛选
@@ -1832,8 +1832,8 @@ class PackageManagerWidget(QDialog):
         else:
             # 没有找到结果
             QMessageBox.information(self,
-                                  "搜索结果" if self.lang_mgr else "Search Results",
-                                  f"未找到包含 '{search_text}' 的包" if self.lang_mgr else f"No packages found containing '{search_text}'")
+                                  self.lang_mgr.get_text("search_results") if self.lang_mgr else "Search Results",
+                                  self.lang_mgr.format_text("no_packages_found", search_text) if self.lang_mgr else f"No packages found containing '{search_text}'")
             self.show_welcome_message()
     
     def update_statistics(self):
@@ -1984,12 +1984,13 @@ class PackageManagerWidget(QDialog):
         self.batch_download_current += 1
         
         # 更新状态
-        self.status_label.setText(f"批量下载中 ({self.batch_download_current}/{self.batch_download_total}): {package.get_display_name()}")
+        status_text = self.lang_mgr.format_text("batch_downloading", self.batch_download_current, self.batch_download_total, package.get_display_name()) if self.lang_mgr else f"Batch downloading ({self.batch_download_current}/{self.batch_download_total}): {package.get_display_name()}"
+        self.status_label.setText(status_text)
         
         # 创建下载任务
         from src.workers.download_thread import DownloadWorker
         self.download_worker = DownloadWorker(
-            self.repo_manager, repo.url, package, self.download_path
+            self.repo_manager, repo.url, package, self.download_path, self.lang_mgr
         )
         self.download_worker.progress.connect(self.on_download_progress)
         self.download_worker.status.connect(self.on_download_status)

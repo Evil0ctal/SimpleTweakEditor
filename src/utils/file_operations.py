@@ -24,6 +24,7 @@ import platform
 
 from .system_utils import set_debian_permissions, get_package_info_from_control, suggest_output_filename
 from .dpkg_deb import dpkg_deb
+from .security import validate_path, secure_path_join, sanitize_filename, validate_file_size, PathTraversalError
 
 
 def find_dpkg_deb():
@@ -149,21 +150,28 @@ def unpack_deb_file(deb_path, output_dir):
         tuple: (成功标志, 消息, 目标目录)
     """
     try:
-        # 安全路径验证
-        deb_path = os.path.abspath(os.path.expanduser(deb_path))
-        output_dir = os.path.abspath(os.path.expanduser(output_dir))
+        # 安全路径验证 - 防止路径遍历攻击
+        try:
+            deb_path = validate_path(os.path.expanduser(deb_path))
+            output_dir = validate_path(os.path.expanduser(output_dir))
+        except PathTraversalError as e:
+            return False, f"不安全的路径: {str(e)}", None
         
         # 验证文件
         if not os.path.exists(deb_path):
             return False, f"文件不存在: {deb_path}", None
         if not deb_path.endswith('.deb'):
             return False, "不是有效的.deb文件", None
-        if os.path.getsize(deb_path) > 500 * 1024 * 1024:
-            return False, "文件过大（超过500MB）", None
+        
+        # 验证文件大小
+        try:
+            validate_file_size(deb_path, max_size=500 * 1024 * 1024)
+        except ValueError as e:
+            return False, str(e), None
         
         # 准备目标目录（以.deb文件命名的文件夹）
-        deb_name = os.path.splitext(os.path.basename(deb_path))[0]
-        target_dir = os.path.join(output_dir, deb_name)
+        deb_name = sanitize_filename(os.path.splitext(os.path.basename(deb_path))[0])
+        target_dir = secure_path_join(output_dir, deb_name)
 
         # 如果目标目录已存在，删除它
         if os.path.exists(target_dir):

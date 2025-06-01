@@ -447,7 +447,7 @@ class PackageBrowserDialog(QDialog):
         
         # 创建下载任务
         from src.workers.download_thread import BatchDownloadWorker
-        self.download_worker = BatchDownloadWorker(self.repo_manager, packages, self.download_path)
+        self.download_worker = BatchDownloadWorker(self.repo_manager, packages, self.download_path, self.lang_mgr)
         self.download_worker.package_started.connect(self.on_package_started)
         self.download_worker.package_progress.connect(self.on_package_progress)
         self.download_worker.package_finished.connect(self.on_package_finished)

@@ -84,6 +84,9 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.py,cover
+test_*.plist
+debug_*.plist
+*_test_report.md
 
 # Documentation
 docs/_build/

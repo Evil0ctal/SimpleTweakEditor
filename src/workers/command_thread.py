@@ -17,8 +17,9 @@ notifications.
 """
 
 import subprocess
+import shlex
 from PyQt6.QtCore import QThread, pyqtSignal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union, List
 
 if TYPE_CHECKING:
     from PyQt6.QtCore import pyqtSignal as Signal
@@ -34,20 +35,60 @@ class CommandThread(QThread):
     command_finished: Signal = pyqtSignal(int)  # 信号: 返回码
     error_message: Signal = pyqtSignal(str)  # 信号: 错误消息
 
-    def __init__(self, command, lang_mgr=None):
+    def __init__(self, command: Union[str, List[str]], lang_mgr=None):
         super().__init__()
-        self.command = command
+        # 安全处理命令输入
+        if isinstance(command, str):
+            # 如果是字符串，使用shlex.split安全地解析为列表
+            try:
+                self.command = shlex.split(command)
+            except ValueError as e:
+                # 如果解析失败，抛出异常
+                raise ValueError(f"Invalid command format: {e}")
+        elif isinstance(command, list):
+            # 如果已经是列表，验证每个元素都是字符串
+            if not all(isinstance(arg, str) for arg in command):
+                raise ValueError("All command arguments must be strings")
+            self.command = command
+        else:
+            raise TypeError("Command must be a string or list of strings")
+        
         self.lang_mgr = lang_mgr
         self._should_stop = False
 
     def stop(self):
         """停止命令执行"""
+        import os
+        import signal
+        import time
+        
         self._should_stop = True
-        if hasattr(self, 'process'):
+        if hasattr(self, 'process') and self.process.poll() is None:
             try:
+                # 首先尝试优雅地终止进程
                 self.process.terminate()
-            except Exception:
+                
+                # 等待最多5秒让进程自行退出
+                try:
+                    self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    # 如果进程仍未退出，强制杀死它
+                    if os.name == 'posix':
+                        # Unix/Linux/Mac: 使用kill信号
+                        os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+                    else:
+                        # Windows: 使用kill
+                        self.process.kill()
+                    
+                    # 再次等待确保进程已死亡
+                    self.process.wait(timeout=1)
+                    
+            except (ProcessLookupError, OSError):
+                # 进程可能已经退出
                 pass
+            except Exception as e:
+                # 记录其他错误但不抛出
+                print(f"Error stopping process: {e}")
 
     def get_error_text(self, error):
         """获取错误文本（本地化）"""
@@ -58,15 +99,18 @@ class CommandThread(QThread):
     def run(self):
         """运行命令"""
         try:
-            # 创建子进程
+            # 安全创建子进程 - 永远不使用shell=True
+            # command已经在__init__中被安全地转换为列表
             self.process = subprocess.Popen(
                 self.command,
-                shell=True if isinstance(self.command, str) else False,
+                shell=False,  # 永远不使用shell=True，防止命令注入
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,  # 行缓冲
-                universal_newlines=True
+                universal_newlines=True,
+                # 添加安全限制
+                start_new_session=True  # 在新的会话中运行，便于清理
             )
 
             # 等待进程完成并获取所有输出
