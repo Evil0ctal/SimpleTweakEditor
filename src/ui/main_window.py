@@ -179,7 +179,7 @@ class MainWindow(QMainWindow):
             from src.ui.device_panel import DevicePanel
             
             # 创建设备面板
-            self.device_panel = DevicePanel(self.lang_mgr)
+            self.device_panel = DevicePanel(self.lang_mgr, self.style_mgr)
             
             # 连接信号
             self.device_panel.device_connected.connect(self.on_device_connected)

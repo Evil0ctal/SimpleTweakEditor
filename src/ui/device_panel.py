@@ -84,9 +84,10 @@ class DevicePanel(QWidget):
     device_connected = pyqtSignal(iOSDevice)
     device_disconnected = pyqtSignal()
     
-    def __init__(self, language_manager: LanguageManager, parent=None):
+    def __init__(self, language_manager: LanguageManager, style_mgr=None, parent=None):
         super().__init__(parent)
         self.lang_mgr = language_manager
+        self.style_mgr = style_mgr
         self.device_manager = DeviceManager()
         self.current_device = None
         self.connected_devices = {}  # UDID -> iOSDevice mapping
@@ -156,6 +157,12 @@ class DevicePanel(QWidget):
         self.install_button.setEnabled(False)
         self.install_button.clicked.connect(self.install_deb_to_device)
         button_layout.addWidget(self.install_button)
+        
+        # 文件管理器按钮
+        self.file_manager_button = QPushButton(self.lang_mgr.get_text("file_manager") or "File Manager")
+        self.file_manager_button.setEnabled(False)
+        self.file_manager_button.clicked.connect(self.open_file_manager)
+        button_layout.addWidget(self.file_manager_button)
         
         # 刷新按钮
         self.refresh_button = QPushButton(self.lang_mgr.get_text("refresh_devices"))
@@ -248,6 +255,7 @@ class DevicePanel(QWidget):
             self.current_device = self.connected_devices[udid]
             self.update_device_info(self.current_device)
             self.install_button.setEnabled(True)
+            self.file_manager_button.setEnabled(True)
             self.log_text.append(f"[SELECTED] {self.current_device.name} ({self.current_device.model})")
             
             # 更新应用程序的当前设备
@@ -310,6 +318,7 @@ class DevicePanel(QWidget):
             self.current_device = device
             self.update_device_info(device)
             self.install_button.setEnabled(True)
+            self.file_manager_button.setEnabled(True)
         else:
             # 多设备时，只更新状态标签
             self.status_label.setText(f"{len(self.connected_devices)} device(s) connected")
@@ -367,6 +376,7 @@ class DevicePanel(QWidget):
                     self.status_label.setStyleSheet("color: gray;")
                     self.device_info_widget.setVisible(False)
                     self.install_button.setEnabled(False)
+                    self.file_manager_button.setEnabled(False)
                     self.device_combo.setEnabled(False)
         else:
             # 兼容旧代码
@@ -375,6 +385,7 @@ class DevicePanel(QWidget):
             self.status_label.setStyleSheet("color: gray;")
             self.device_info_widget.setVisible(False)
             self.install_button.setEnabled(False)
+            self.file_manager_button.setEnabled(False)
             self.log_text.append("[DISCONNECTED] Device disconnected")
         
         # 发出信号
@@ -835,3 +846,76 @@ class DevicePanel(QWidget):
             
             self.log_text.append("[INFO] Manual jailbreak confirmation completed")
             self.log_text.append("[INFO] You can now use device features based on confirmed status")
+    
+    def open_file_manager(self):
+        """打开文件管理器"""
+        if not self.current_device:
+            QMessageBox.warning(
+                self,
+                self.lang_mgr.get_text("error") or "Error",
+                self.lang_mgr.get_text("no_device_selected") or "No device selected"
+            )
+            return
+        
+        # 检查是否有 lockdown client
+        if not self.current_device.lockdown_client:
+            reply = QMessageBox.question(
+                self,
+                "Limited Functionality",
+                "File Manager requires pymobiledevice3 for full functionality.\n"
+                "Without it, file access will be very limited.\n\n"
+                "Continue anyway?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+        
+        try:
+            from .file_manager_widget import FileManagerWidget
+            
+            # 创建文件管理器窗口
+            self.file_manager = FileManagerWidget(self.current_device, self.lang_mgr, self.style_mgr, self)
+            
+            # 连接文件双击信号（用于安装 .deb 文件）
+            self.file_manager.file_double_clicked.connect(self.on_file_manager_deb_selected)
+            
+            # 显示窗口
+            self.file_manager.show()
+            
+            self.log_text.append(f"[FILE MANAGER] Opened for {self.current_device.name}")
+            
+        except ImportError as e:
+            self.log_text.append(f"[ERROR] Failed to import file manager: {e}")
+            QMessageBox.critical(
+                self,
+                self.lang_mgr.get_text("error") or "Error",
+                "File Manager module not available.\nPlease check the installation."
+            )
+        except Exception as e:
+            self.log_text.append(f"[ERROR] Failed to open file manager: {e}")
+            QMessageBox.critical(
+                self,
+                self.lang_mgr.get_text("error") or "Error",
+                f"Failed to open file manager: {str(e)}"
+            )
+    
+    def on_file_manager_deb_selected(self, deb_path: str):
+        """处理文件管理器中选择的 .deb 文件"""
+        self.log_text.append(f"[FILE MANAGER] Selected .deb file: {deb_path}")
+        
+        # 询问是否安装
+        reply = QMessageBox.question(
+            self,
+            self.lang_mgr.get_text("confirm") or "Confirm",
+            f"Install {os.path.basename(deb_path)} on device?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            # TODO: 实现从设备路径直接安装的功能
+            QMessageBox.information(
+                self,
+                "Info",
+                "Direct installation from device path is not yet implemented.\n"
+                "Please download the file first, then use the Upload button."
+            )
