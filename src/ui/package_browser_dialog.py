@@ -24,6 +24,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from typing import List, Tuple
 import os
 from pathlib import Path
+from ..utils.debug_logger import debug
 
 
 class PackageDetailsWidget(QTextEdit):
@@ -70,6 +71,8 @@ class PackageDetailsWidget(QTextEdit):
             <div class="info"><span class="label">分类:</span> {package.section or '未分类'}</div>
             <div class="info"><span class="label">描述:</span> {package.description or '无描述'}</div>
             {f'<div class="info"><span class="label">依赖:</span> {package.depends}</div>' if package.depends else ''}
+            {f'<div class="info"><span class="label" style="color: #4CAF50;">✓ Rootless</span></div>' if package.is_rootless_compatible() else ''}
+            {f'<div class="info"><span class="label" style="color: #FF9800;">💰 商业插件</span></div>' if package.is_commercial() else ''}
         </body>
         </html>
         """
@@ -466,7 +469,7 @@ class PackageBrowserDialog(QDialog):
     def on_package_finished(self, name: str, success: bool, result: str):
         """包下载完成"""
         if success:
-            print(f"[DEBUG] Downloaded {name} to {result}")
+            debug(f"Downloaded {name} to {result}")
             self.package_downloaded.emit(result)
         else:
             print(f"[ERROR] Failed to download {name}: {result}")

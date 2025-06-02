@@ -23,49 +23,50 @@ from PyQt6.QtWidgets import (
     QProgressDialog
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QAbstractListModel, QModelIndex
-from PyQt6.QtGui import QFont, QAction
+from PyQt6.QtGui import QFont, QAction, QActionGroup
 from typing import List, Dict, Optional
 import os
 import sys
 from pathlib import Path
 from src.ui.repo_manager_dialog import RepoManagerDialog
+from ..utils.debug_logger import debug
 
 
 class PackageListItemWidget(QWidget):
     """自定义的包列表项控件"""
-    
+
     checkbox_toggled = pyqtSignal(bool)  # 勾选状态改变
     item_clicked = pyqtSignal()  # 项目被点击
-    
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.repo = None
         self.package = None
         self.package_key = None
         self.init_ui()
-    
+
     def init_ui(self):
         """初始化界面"""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(5, 2, 5, 2)
         layout.setSpacing(8)
-        
+
         # 勾选框
         self.checkbox = QCheckBox()
         self.checkbox.stateChanged.connect(self.on_checkbox_changed)
         layout.addWidget(self.checkbox)
-        
+
         # 包名和版本标签
         self.label = QLabel("")
         self.label.setCursor(Qt.CursorShape.PointingHandCursor)
         layout.addWidget(self.label, 1)
-        
+
         # 工具提示将在设置包数据时设置
-    
+
     def on_checkbox_changed(self, state):
         """勾选框状态改变"""
         self.checkbox_toggled.emit(self.checkbox.isChecked())
-    
+
     def mousePressEvent(self, event):
         """鼠标单击事件"""
         # 如果点击的不是勾选框，则触发项目单击事件（查看信息）
@@ -73,7 +74,7 @@ class PackageListItemWidget(QWidget):
             checkbox_rect = self.checkbox.geometry()
             if not checkbox_rect.contains(event.pos()):
                 self.item_clicked.emit()
-    
+
     def mouseDoubleClickEvent(self, event):
         """鼠标双击事件"""
         # 双击切换勾选状态（除非点击的是勾选框）
@@ -84,49 +85,69 @@ class PackageListItemWidget(QWidget):
                 new_state = not self.checkbox.isChecked()
                 self.checkbox.setChecked(new_state)
                 self.checkbox_toggled.emit(new_state)
-    
+
     def is_checked(self):
         """获取勾选状态"""
         return self.checkbox.isChecked()
-    
+
     def set_checked(self, checked):
         """设置勾选状态"""
         self.checkbox.setChecked(checked)
-    
+
     def set_package_data(self, repo, package, package_key):
         """设置包数据"""
         try:
             if not repo or not package:
                 print(f"[ERROR] set_package_data 收到空参数: repo={repo}, package={package}")
                 return
-            
+
             self.repo = repo
             self.package = package
             self.package_key = package_key
-            
+
             # 更新显示文本
             if hasattr(package, 'get_display_name'):
                 display_text = package.get_display_name()
                 if hasattr(package, 'version') and package.version:
                     display_text += f" ({package.version})"
+                    
+                # 添加越狱兼容性标记
+                if hasattr(package, 'get_jailbreak_compatibility'):
+                    jb_compat = package.get_jailbreak_compatibility()
+                    if jb_compat == 'Rootless':
+                        display_text += " [RL]"
+                    elif jb_compat == 'Rootful':
+                        display_text += " [RF]"
+                    elif jb_compat == 'Both':
+                        display_text += " [U]"
+                        
                 self.label.setText(display_text)
             else:
                 print(f"[ERROR] package对象没有get_display_name方法: {type(package)}")
                 self.label.setText(f"Unknown package: {package}")
-            
+
             # 设置工具提示
             tooltip_parts = [f"包名: {package.package}"]
             if hasattr(package, 'author') and package.author:
                 tooltip_parts.append(f"作者: {package.author}")
             if hasattr(package, 'size') and package.size:
                 tooltip_parts.append(f"大小: {package.get_display_size()}")
+            if hasattr(package, 'get_jailbreak_compatibility'):
+                jb_compat = package.get_jailbreak_compatibility()
+                compat_map = {
+                    'Rootless': '无根越狱',
+                    'Rootful': '有根越狱',
+                    'Both': '通用',
+                    'Unknown': '未知'
+                }
+                tooltip_parts.append(f"兼容性: {compat_map.get(jb_compat, jb_compat)}")
             self.setToolTip("\n".join(tooltip_parts))
-                
+
         except Exception as e:
             print(f"[ERROR] set_package_data 出错: {e}")
             import traceback
             traceback.print_exc()
-    
+
     def set_text(self, text):
         """设置显示文本"""
         self.label.setText(text)
@@ -134,26 +155,26 @@ class PackageListItemWidget(QWidget):
 
 class PackageDetailWidget(QWidget):
     """包详情显示组件"""
-    
+
     download_requested = pyqtSignal(object, object)  # repo, package
-    
+
     def __init__(self, lang_mgr=None, parent=None):
         super().__init__(parent)
         self.lang_mgr = lang_mgr
         self.current_package = None
         self.current_repo = None
         self.init_ui()
-    
+
     def init_ui(self):
         """初始化界面"""
         layout = QVBoxLayout()
         layout.setContentsMargins(10, 10, 10, 10)
-        
+
         # 包信息卡片
         info_title = self.lang_mgr.get_text("package_info") if self.lang_mgr else "Package Information"
         info_group = QGroupBox(info_title)
         info_layout = QVBoxLayout()
-        
+
         # 包名和版本
         self.name_label = QLabel()
         font = QFont()
@@ -161,43 +182,43 @@ class PackageDetailWidget(QWidget):
         font.setBold(True)
         self.name_label.setFont(font)
         info_layout.addWidget(self.name_label)
-        
+
         # 作者和大小
         self.info_label = QLabel()
         self.info_label.setWordWrap(True)  # 启用自动换行
         info_layout.addWidget(self.info_label)
-        
+
         # 描述
         self.desc_text = QTextEdit()
         self.desc_text.setReadOnly(True)
         self.desc_text.setMaximumHeight(80)
         info_layout.addWidget(self.desc_text)
-        
+
         info_group.setLayout(info_layout)
         layout.addWidget(info_group)
-        
+
         # 详细信息
         details_title = self.lang_mgr.get_text("details") if self.lang_mgr else "Details"
         details_group = QGroupBox(details_title)
         details_layout = QVBoxLayout()
-        
+
         self.details_text = QTextEdit()
         self.details_text.setReadOnly(True)
         self.details_text.setMaximumHeight(120)
         details_layout.addWidget(self.details_text)
-        
+
         details_group.setLayout(details_layout)
         layout.addWidget(details_group)
-        
+
         # 操作按钮
         btn_layout = QHBoxLayout()
-        
+
         download_text = self.lang_mgr.get_text("download") if self.lang_mgr else "Download"
         self.download_btn = QPushButton(download_text)
         self.download_btn.setMinimumHeight(35)
         self.download_btn.clicked.connect(self._on_download)
         btn_layout.addWidget(self.download_btn)
-        
+
         # 查看历史版本按钮
         versions_text = self.lang_mgr.get_text("view_versions") if self.lang_mgr else "View Versions"
         self.versions_btn = QPushButton(versions_text)
@@ -205,30 +226,31 @@ class PackageDetailWidget(QWidget):
         self.versions_btn.clicked.connect(self._on_view_versions)
         self.versions_btn.setVisible(False)  # 默认隐藏
         btn_layout.addWidget(self.versions_btn)
-        
+
         layout.addLayout(btn_layout)
-        
+
         layout.addStretch()
         self.setLayout(layout)
-    
+
     def show_package(self, repo, package, package_versions=None):
         """显示包信息"""
         self.current_repo = repo
         self.current_package = package
         self.package_versions = package_versions
-        
+
         # 包名和版本
         self.name_label.setText(f"{package.get_display_name()} - {package.get_display_version()}")
-        
+
         # 显示/隐藏版本按钮
         if package_versions and len(package_versions) > 1:
             self.versions_btn.setVisible(True)
             version_count = len(package_versions)
-            versions_text = self.lang_mgr.format_text("view_n_versions", version_count) if self.lang_mgr else f"View {version_count} Versions"
+            versions_text = self.lang_mgr.format_text("view_n_versions",
+                                                      version_count) if self.lang_mgr else f"View {version_count} Versions"
             self.versions_btn.setText(versions_text)
         else:
             self.versions_btn.setVisible(False)
-        
+
         # 基本信息
         info_parts = []
         if package.get_display_author():
@@ -237,16 +259,19 @@ class PackageDetailWidget(QWidget):
         if package.get_display_size():
             size_text = self.lang_mgr.get_text("size") if self.lang_mgr else "Size"
             info_parts.append(f"{size_text}: {package.get_display_size()}")
+        if package.architecture:
+            arch_text = self.lang_mgr.get_text("architecture") if self.lang_mgr else "Architecture"
+            info_parts.append(f"{arch_text}: {package.architecture}")
         if repo:
             source_text = self.lang_mgr.get_text("source") if self.lang_mgr else "Source"
             info_parts.append(f"{source_text}: {repo.name}")
         self.info_label.setText(" | ".join(info_parts))
-        
+
         # 描述
         no_desc_text = self.lang_mgr.get_text("no_description") if self.lang_mgr else "No description"
         desc = package.description or no_desc_text
         self.desc_text.setPlainText(desc)
-        
+
         # 详细信息
         details = []
         package_text = self.lang_mgr.get_text("package_name") if self.lang_mgr else "Package"
@@ -264,69 +289,77 @@ class PackageDetailWidget(QWidget):
             filename_text = self.lang_mgr.get_text("filename") if self.lang_mgr else "Filename"
             details.append(f"{filename_text}: {os.path.basename(package.filename)}")
         
+        # 添加越狱兼容性信息
+        jb_compat = package.get_jailbreak_compatibility()
+        jb_compat_text = self.lang_mgr.get_text("jailbreak_compatibility") if self.lang_mgr else "Jailbreak Compatibility"
+        compat_value = self.lang_mgr.get_text(f"jailbreak_{jb_compat.lower()}") if self.lang_mgr else jb_compat
+        details.append(f"{jb_compat_text}: {compat_value}")
+
         self.details_text.setPlainText("\n".join(details))
-        
+
         # 更新按钮状态
         self.download_btn.setEnabled(bool(package.filename))
-    
+
     def _on_download(self):
         """下载按钮点击"""
         if self.current_package and self.current_repo:
             self.download_requested.emit(self.current_repo, self.current_package)
-    
+
     def _on_view_versions(self):
         """查看历史版本"""
         if not self.package_versions:
             return
-            
+
         # 创建版本选择对话框
         from PyQt6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QDialogButtonBox, QLabel
-        
+
         dialog = QDialog(self)
         dialog.setWindowTitle(self.lang_mgr.get_text("select_version") if self.lang_mgr else "Select Version")
         dialog.resize(500, 400)
-        
+
         layout = QVBoxLayout()
-        
+
         # 标题
-        title = QLabel(f"{self.current_package.get_display_name()} - {self.lang_mgr.get_text('all_versions') if self.lang_mgr else 'All Versions'}")
+        title = QLabel(
+            f"{self.current_package.get_display_name()} - {self.lang_mgr.get_text('all_versions') if self.lang_mgr else 'All Versions'}")
         title.setProperty("class", "heading")
         layout.addWidget(title)
-        
+
         # 版本列表
         version_list = QListWidget()
-        for repo, pkg in sorted(self.package_versions, key=lambda x: x[1].version if x[1].version else "", reverse=True):
+        for repo, pkg in sorted(self.package_versions, key=lambda x: x[1].version if x[1].version else "",
+                                reverse=True):
             item_text = f"{pkg.version} - {repo.name}"
             if pkg.size:
                 item_text += f" ({pkg.size})"
             version_list.addItem(item_text)
-        
+
         # 默认选中当前版本
         for i in range(version_list.count()):
             if self.current_package.version in version_list.item(i).text():
                 version_list.setCurrentRow(i)
                 break
-                
+
         layout.addWidget(version_list)
-        
+
         # 按钮
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(dialog.accept)
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)
-        
+
         dialog.setLayout(layout)
-        
+
         # 显示对话框
         if dialog.exec() == QDialog.DialogCode.Accepted:
             selected_index = version_list.currentRow()
             if selected_index >= 0:
                 # 切换到选中的版本
-                selected_repo, selected_pkg = sorted(self.package_versions, 
-                                                   key=lambda x: x[1].version if x[1].version else "", 
-                                                   reverse=True)[selected_index]
+                selected_repo, selected_pkg = sorted(self.package_versions,
+                                                     key=lambda x: x[1].version if x[1].version else "",
+                                                     reverse=True)[selected_index]
                 self.show_package(selected_repo, selected_pkg, self.package_versions)
-    
+
     def _on_change_path(self):
         """更改路径按钮点击"""
         # 获取PackageManagerWidget实例
@@ -335,25 +368,25 @@ class PackageDetailWidget(QWidget):
             parent = parent.parent()
         if parent:
             parent.change_download_path()
-    
+
     def update_language(self, lang_mgr):
         """更新语言"""
         self.lang_mgr = lang_mgr
-        
+
         # 更新组框标题
         if hasattr(self, 'parent') and self.parent():
             info_group = self.findChild(QGroupBox)
             if info_group:
                 info_title = lang_mgr.get_text("package_info") if lang_mgr else "Package Information"
                 info_group.setTitle(info_title)
-        
+
         # 更新按钮文本
         download_text = lang_mgr.get_text("download") if lang_mgr else "Download"
         self.download_btn.setText(download_text)
-        
+
         versions_text = lang_mgr.get_text("view_versions") if lang_mgr else "View Versions"
         self.versions_btn.setText(versions_text)
-        
+
         # 如果有当前包，重新显示
         if self.current_package and self.current_repo:
             self.show_package(self.current_repo, self.current_package, self.package_versions)
@@ -364,33 +397,33 @@ class PackageLoadWorker(QThread):
     progress_update = pyqtSignal(int, int, str)  # current, total, message
     batch_ready = pyqtSignal(list)  # List of (item_data, package_key)
     finished_loading = pyqtSignal()
-    
+
     def __init__(self, packages, checked_items):
         super().__init__()
         self.packages = packages
         self.checked_items = checked_items
         self.is_canceled = False
-        
+
     def run(self):
         """在后台线程中准备包数据"""
         batch_size = 1000  # 每批准备1000个包数据
         total_packages = len(self.packages)
         current_index = 0
-        
+
         while current_index < total_packages and not self.is_canceled:
             batch_data = []
             end_index = min(current_index + batch_size, total_packages)
-            
+
             # 准备批量数据（不创建UI组件）
             for i in range(current_index, end_index):
                 if self.is_canceled:
                     break
-                    
+
                 repo, package = self.packages[i]
                 if repo and package:
                     package_key = f"{repo.url}:{package.package}"
                     is_checked = self.checked_items.get(package_key, False)
-                    
+
                     # 准备数据而不是创建widget
                     item_data = {
                         'repo': repo,
@@ -400,23 +433,23 @@ class PackageLoadWorker(QThread):
                         'index': i
                     }
                     batch_data.append(item_data)
-            
+
             # 发送批量数据到主线程
             if batch_data and not self.is_canceled:
                 self.batch_ready.emit(batch_data)
-            
+
             # 更新进度
             current_index = end_index
             if not self.is_canceled:
-                self.progress_update.emit(current_index, total_packages, 
-                                        f"Loading packages... ({current_index}/{total_packages})")
-            
+                self.progress_update.emit(current_index, total_packages,
+                                          f"Loading packages... ({current_index}/{total_packages})")
+
             # 给其他线程一点时间
             self.msleep(1)
-        
+
         if not self.is_canceled:
             self.finished_loading.emit()
-    
+
     def cancel(self):
         """取消加载"""
         self.is_canceled = True
@@ -424,28 +457,39 @@ class PackageLoadWorker(QThread):
 
 class PackageListModel(QAbstractListModel):
     """包列表数据模型 - 用于虚拟化渲染"""
-    
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.packages = []  # [(repo, package), ...]
         self.checked_items = {}  # {package_key: bool}
-        
+
     def rowCount(self, parent=QModelIndex()):
         """返回行数"""
         return len(self.packages)
-    
+
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         """返回指定索引的数据"""
         if not index.isValid() or index.row() >= len(self.packages):
             return None
-            
+
         repo, package = self.packages[index.row()]
-        
+
         if role == Qt.ItemDataRole.DisplayRole:
             # 返回显示文本
             display_text = package.get_display_name()
             if hasattr(package, 'version') and package.version:
                 display_text += f" ({package.version})"
+                
+            # 添加越狱兼容性标记
+            if hasattr(package, 'get_jailbreak_compatibility'):
+                jb_compat = package.get_jailbreak_compatibility()
+                if jb_compat == 'Rootless':
+                    display_text += " [RL]"
+                elif jb_compat == 'Rootful':
+                    display_text += " [RF]"
+                elif jb_compat == 'Both':
+                    display_text += " [U]"
+                    
             return display_text
         elif role == Qt.ItemDataRole.CheckStateRole:
             # 返回勾选状态
@@ -464,23 +508,26 @@ class PackageListModel(QAbstractListModel):
                 tooltip += f"\nVersion: {package.version}"
             if hasattr(package, 'author') and package.author:
                 tooltip += f"\nAuthor: {package.author}"
+            if hasattr(package, 'get_jailbreak_compatibility'):
+                jb_compat = package.get_jailbreak_compatibility()
+                tooltip += f"\nJailbreak: {jb_compat}"
             if hasattr(package, 'description') and package.description:
                 tooltip += f"\n{package.description[:100]}..."
             return tooltip
-            
+
         return None
-    
+
     def setData(self, index, value, role=Qt.ItemDataRole.EditRole):
         """设置数据"""
         if not index.isValid() or index.row() >= len(self.packages):
             return False
-            
+
         if role == Qt.ItemDataRole.CheckStateRole:
             repo, package = self.packages[index.row()]
             package_key = f"{repo.url}:{package.package}"
             self.checked_items[package_key] = (value == Qt.CheckState.Checked)
             self.dataChanged.emit(index, index, [Qt.ItemDataRole.CheckStateRole])
-            
+
             # 通知父widget更新全局checked_items
             parent_widget = self.parent()
             while parent_widget:
@@ -488,40 +535,40 @@ class PackageListModel(QAbstractListModel):
                     parent_widget.on_model_checkbox_toggled(package_key, value == Qt.CheckState.Checked)
                     break
                 parent_widget = parent_widget.parent()
-            
+
             return True
-            
+
         return False
-    
+
     def flags(self, index):
         """返回项目标志"""
         if not index.isValid():
             return Qt.ItemFlag.NoItemFlags
-            
+
         return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsUserCheckable
-    
+
     def add_packages(self, packages):
         """批量添加包"""
         if not packages:
             return
-            
+
         first = len(self.packages)
         last = first + len(packages) - 1
-        
+
         self.beginInsertRows(QModelIndex(), first, last)
         self.packages.extend(packages)
         self.endInsertRows()
-    
+
     def clear(self):
         """清空所有包"""
         if not self.packages:
             return
-            
+
         self.beginResetModel()
         self.packages.clear()
         self.checked_items.clear()
         self.endResetModel()
-    
+
     def get_checked_packages(self):
         """获取所有勾选的包"""
         checked = []
@@ -530,7 +577,7 @@ class PackageListModel(QAbstractListModel):
             if self.checked_items.get(package_key, False):
                 checked.append((repo, package))
         return checked
-    
+
     def set_packages(self, packages):
         """设置包列表"""
         self.beginResetModel()
@@ -540,25 +587,25 @@ class PackageListModel(QAbstractListModel):
 
 class PackageManagerWidget(QDialog):
     """插件管理器主窗口"""
-    
+
     package_downloaded = pyqtSignal(str)  # 下载完成的文件路径
-    
+
     def __init__(self, parent=None, repo_manager=None, lang_mgr=None):
         super().__init__(parent)
         self.repo_manager = repo_manager
         self.lang_mgr = lang_mgr
-        
+
         window_title = "Package Manager"
         if self.lang_mgr:
             try:
                 window_title = self.lang_mgr.get_text("package_manager")
             except Exception as e:
                 print(f"[WARNING] 获取窗口标题失败: {e}")
-        
+
         self.setWindowTitle(window_title)
         self.setModal(False)
         self.resize(1000, 700)
-        
+
         self.all_packages = []  # 所有包数据
         self.filtered_packages = []  # 筛选后的包
         self.package_versions = {}  # 存储每个包的所有版本 {repo_url:package_name: [(repo, package)...]}
@@ -568,15 +615,15 @@ class PackageManagerWidget(QDialog):
         self.batch_download_queue = []  # 批量下载队列
         self.batch_download_total = 0
         self.batch_download_current = 0
-        
+
         # 默认下载路径
         self.download_path = str(Path.home() / "Downloads" / "SimpleTweakEditor")
         Path(self.download_path).mkdir(parents=True, exist_ok=True)
-        
+
         self.init_ui()
         # 默认加载所有源的包
         self.load_all_packages()
-    
+
     def set_source_filter(self, source_name: str):
         """设置源筛选 - 从Manage Sources调用时使用"""
         # 找到对应的repo对象
@@ -585,23 +632,23 @@ class PackageManagerWidget(QDialog):
             if repo.name == source_name:
                 target_repo = repo
                 break
-        
+
         if target_repo:
             # 加载该源的包
             self.filter_by_source(target_repo)
-    
+
     def init_ui(self):
         """初始化界面"""
         try:
             layout = QVBoxLayout()
-            
+
             # 顶部工具栏
             toolbar = QHBoxLayout()
-            
+
             # 源选择器
             source_text = "Source:" if not self.lang_mgr else self.lang_mgr.get_text('source') + ":"
             toolbar.addWidget(QLabel(source_text))
-            
+
             self.source_btn = QToolButton()
             all_sources_text = "All Sources" if not self.lang_mgr else self.lang_mgr.get_text("all_sources")
             self.source_btn.setText(all_sources_text)
@@ -616,84 +663,139 @@ class PackageManagerWidget(QDialog):
             self.source_btn.setMaximumHeight(28)
             self.update_source_menu()
             toolbar.addWidget(self.source_btn)
-            
+
             # 管理源按钮
-            manage_sources_text = "Manage Sources" if not self.lang_mgr else self.lang_mgr.get_text("manage_sources")
-            self.manage_sources_btn = QPushButton(manage_sources_text)
-            self.manage_sources_btn.setMinimumHeight(28)
-            self.manage_sources_btn.setMaximumHeight(28)
-            self.manage_sources_btn.clicked.connect(self.open_repo_manager)
-            toolbar.addWidget(self.manage_sources_btn)
-        
-            
-            toolbar.addSpacing(20)
-            
+            # manage_sources_text = "Manage Sources" if not self.lang_mgr else self.lang_mgr.get_text("manage_sources")
+            # self.manage_sources_btn = QPushButton(manage_sources_text)
+            # self.manage_sources_btn.setMinimumHeight(28)
+            # self.manage_sources_btn.setMaximumHeight(28)
+            # self.manage_sources_btn.clicked.connect(self.open_repo_manager)
+            # toolbar.addWidget(self.manage_sources_btn)
+
+            # toolbar.addSpacing(20)
+
             # 搜索框
             search_text = "Search:" if not self.lang_mgr else self.lang_mgr.get_text('search') + ":"
             toolbar.addWidget(QLabel(search_text))
-            
+
             self.search_input = QLineEdit()
-            search_placeholder = self.lang_mgr.get_text("search_in_all_repos") if self.lang_mgr else "Search in all repositories..."
+            search_placeholder = self.lang_mgr.get_text(
+                "search_in_all_repos") if self.lang_mgr else "Search in all repositories..."
             self.search_input.setPlaceholderText(search_placeholder)
             # 实时搜索 - 当文本改变时触发
             self.search_input.textChanged.connect(self.on_search_text_changed)
             # 同时保留回车键搜索功能
             self.search_input.returnPressed.connect(self.perform_search)
             toolbar.addWidget(self.search_input, 1)
-            
+
             # 搜索延迟定时器
             self.search_timer = QTimer()
             self.search_timer.setSingleShot(True)
             self.search_timer.timeout.connect(self.perform_search)
-            
+
             # 刷新按钮
-            refresh_text = "Refresh" if not self.lang_mgr else self.lang_mgr.get_text("refresh")
-            self.refresh_btn = QPushButton(refresh_text)
-            self.refresh_btn.clicked.connect(self.refresh_packages)
-            toolbar.addWidget(self.refresh_btn)
+            # refresh_text = "Refresh" if not self.lang_mgr else self.lang_mgr.get_text("refresh")
+            # self.refresh_btn = QPushButton(refresh_text)
+            # self.refresh_btn.clicked.connect(self.refresh_packages)
+            # toolbar.addWidget(self.refresh_btn)
             
+            # 越狱模式选择器
+            toolbar.addSpacing(10)
+            jb_mode_text = self.lang_mgr.get_text("jailbreak_mode") if self.lang_mgr else "Jailbreak Mode"
+            toolbar.addWidget(QLabel(jb_mode_text + ":"))
+            
+            self.jb_mode_btn = QToolButton()
+            self.jb_mode_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+            self.jb_mode_btn.setMinimumWidth(100)
+            self.jb_mode_btn.setMinimumHeight(28)
+            self.jb_mode_btn.setMaximumHeight(28)
+            
+            # 创建越狱模式菜单
+            self.jb_mode_menu = QMenu()
+            
+            # 添加模式选项
+            all_action = QAction(self.lang_mgr.get_text("all") if self.lang_mgr else "All", self)
+            all_action.setCheckable(True)
+            all_action.setChecked(True)
+            all_action.triggered.connect(lambda: self.set_jailbreak_filter(None))
+            
+            rootless_action = QAction(self.lang_mgr.get_text("jailbreak_rootless") if self.lang_mgr else "Rootless (Modern)", self)
+            rootless_action.setCheckable(True)
+            rootless_action.triggered.connect(lambda: self.set_jailbreak_filter("Rootless"))
+            
+            rootful_action = QAction(self.lang_mgr.get_text("jailbreak_rootful") if self.lang_mgr else "Rootful (Traditional)", self)
+            rootful_action.setCheckable(True)
+            rootful_action.triggered.connect(lambda: self.set_jailbreak_filter("Rootful"))
+            
+            # 创建动作组，使选项互斥
+            self.jb_mode_group = QActionGroup(self)
+            self.jb_mode_group.addAction(all_action)
+            self.jb_mode_group.addAction(rootless_action)
+            self.jb_mode_group.addAction(rootful_action)
+            
+            self.jb_mode_menu.addAction(all_action)
+            self.jb_mode_menu.addAction(rootless_action)
+            self.jb_mode_menu.addAction(rootful_action)
+            
+            
+            self.jb_mode_btn.setMenu(self.jb_mode_menu)
+            self.jb_mode_btn.setText(self.lang_mgr.get_text("all") if self.lang_mgr else "All")
+            toolbar.addWidget(self.jb_mode_btn)
+            
+            # 初始化越狱模式过滤器
+            self.current_jb_filter = None
+
+            # 自定义请求头按钮
+            try:
+                custom_headers_text = self.lang_mgr.get_text("custom_headers") if self.lang_mgr else "Headers"
+            except:
+                custom_headers_text = "Headers"
+            self.custom_headers_btn = QPushButton(custom_headers_text)
+            self.custom_headers_btn.clicked.connect(self.open_custom_headers_dialog)
+            toolbar.addWidget(self.custom_headers_btn)
+
             # 全选/取消全选按钮
             select_all_text = "Select All" if not self.lang_mgr else self.lang_mgr.get_text("select_all")
             self.select_all_btn = QPushButton(select_all_text)
             self.select_all_btn.clicked.connect(self.toggle_select_all)
             toolbar.addWidget(self.select_all_btn)
-            
+
             # 批量下载按钮
             batch_download_text = "Batch Download" if not self.lang_mgr else self.lang_mgr.get_text("batch_download")
             self.batch_download_btn = QPushButton(batch_download_text)
             self.batch_download_btn.clicked.connect(self.batch_download)
             self.batch_download_btn.setEnabled(False)
             toolbar.addWidget(self.batch_download_btn)
-            
+
             layout.addLayout(toolbar)
-        
+
             # 主内容区域
             splitter = QSplitter(Qt.Orientation.Horizontal)
-            
+
             # 左侧：分类和包列表
             left_widget = QWidget()
             left_widget.setMinimumWidth(400)  # 设置最小宽度
             left_widget.setMaximumWidth(600)  # 设置最大宽度
             left_layout = QVBoxLayout(left_widget)
             left_layout.setContentsMargins(0, 0, 0, 0)
-            
+
             # 分类标签
             self.tabs = QTabWidget()
             self.tabs.setUsesScrollButtons(True)  # 启用滚动按钮
             self.tabs.setElideMode(Qt.TextElideMode.ElideNone)  # 不省略标签文本
-            
+
             # 移除标签栏的鼠标滚轮事件处理
             # self.tabs.tabBar().installEventFilter(self)
-            
+
             # 添加标签页切换事件处理
             self.tabs.currentChanged.connect(self.on_tab_changed)
-            
+
             # 初始化空的分类列表（将在加载包后动态生成）
             self.categories = []
             self.list_widgets = {}
             self.selected_packages = []  # 存储选中的包（使用列表而不是集合）
             self.checked_items = {}  # 存储勾选状态
-            
+
             # 先创建"全部"分类
             all_widget = QListView()
             all_model = PackageListModel(self)  # 设置父对象
@@ -705,163 +807,163 @@ class PackageManagerWidget(QDialog):
             self.tabs.addTab(all_widget, all_text)
             self.list_widgets["all"] = all_widget
             self.list_models = {"all": all_model}  # 存储模型引用
-            
+
             left_layout.addWidget(self.tabs)
-            
+
             # 右侧：包详情
             self.detail_widget = PackageDetailWidget(self.lang_mgr)
             self.detail_widget.download_requested.connect(self.download_package)
             self.detail_widget.setMinimumWidth(400)
-            
+
             splitter.addWidget(left_widget)
             splitter.addWidget(self.detail_widget)
             splitter.setSizes([500, 500])
             splitter.setStretchFactor(0, 0)  # 左侧不拉伸
             splitter.setStretchFactor(1, 1)  # 右侧可拉伸
-            
+
             layout.addWidget(splitter)
-        
+
             # 底部区域 - 使用垂直布局
             bottom_widget = QWidget()
             bottom_widget.setMaximumHeight(150)
             bottom_layout = QVBoxLayout(bottom_widget)
             bottom_layout.setContentsMargins(0, 5, 0, 0)
-            
+
             # 第一行：统计信息
             stats_layout = QHBoxLayout()
-            
+
             # 包统计信息
             self.stats_label = QLabel()
             self.stats_label.setProperty("class", "heading")
             stats_layout.addWidget(self.stats_label)
-            
+
             stats_layout.addSpacing(20)
-            
+
             # 选中统计
             self.selection_stats_label = QLabel()
             self.selection_stats_label.setProperty("class", "info")
             stats_layout.addWidget(self.selection_stats_label)
-            
+
             stats_layout.addStretch()
-            
+
             # 当前筛选信息
             self.filter_info_label = QLabel()
             self.filter_info_label.setProperty("class", "secondary")
             stats_layout.addWidget(self.filter_info_label)
-            
+
             bottom_layout.addLayout(stats_layout)
-            
+
             # 分隔线
             line = QFrame()
             line.setFrameShape(QFrame.Shape.HLine)
             line.setFrameShadow(QFrame.Shadow.Sunken)
             bottom_layout.addWidget(line)
-            
+
             # 第二行：进度条和状态
             progress_layout = QHBoxLayout()
-            
+
             # 状态信息
             loading_text = "Loading..." if not self.lang_mgr else self.lang_mgr.get_text("loading")
             self.status_label = QLabel(loading_text)
             progress_layout.addWidget(self.status_label)
-            
+
             # 进度条
             self.progress_bar = QProgressBar()
             self.progress_bar.setVisible(False)
             self.progress_bar.setMaximumWidth(300)
             progress_layout.addWidget(self.progress_bar)
-            
+
             progress_layout.addStretch()
-            
+
             bottom_layout.addLayout(progress_layout)
-            
+
             # 第三行：下载路径和操作按钮
             path_layout = QHBoxLayout()
-            
+
             # 下载路径显示
             download_path_text = "Download Path:" if not self.lang_mgr else self.lang_mgr.get_text('download_path')
             path_label = QLabel(download_path_text)
             path_label.setProperty("class", "secondary")
             path_layout.addWidget(path_label)
-            
+
             self.path_label = QLabel(self.download_path)
             self.path_label.setProperty("class", "secondary")
             self.path_label.setCursor(Qt.CursorShape.PointingHandCursor)
             self.path_label.mousePressEvent = lambda e: self.open_download_folder()
             path_layout.addWidget(self.path_label)
-            
+
             # 更改路径按钮
             change_path_text = "Change Path" if not self.lang_mgr else self.lang_mgr.get_text("change_path")
             change_path_btn = QPushButton(change_path_text)
             change_path_btn.clicked.connect(self.change_download_path)
             path_layout.addWidget(change_path_btn)
-            
+
             path_layout.addStretch()
-            
+
             # 快捷操作按钮
             clear_selection_text = "Clear Selection" if not self.lang_mgr else self.lang_mgr.get_text("clear_selection")
             clear_selection_btn = QPushButton(clear_selection_text)
             clear_selection_btn.clicked.connect(self.clear_all_selections)
             path_layout.addWidget(clear_selection_btn)
-            
+
             bottom_layout.addLayout(path_layout)
-        
+
             layout.addWidget(bottom_widget)
-            
+
             self.setLayout(layout)
-            
+
         except Exception as e:
             print(f"[ERROR] init_ui 出错: {e}")
             import traceback
             traceback.print_exc()
-    
+
     def update_source_menu(self):
         """更新源选择菜单"""
         self.source_menu.clear()
-        
+
         # 所有源选项
         all_action = QAction(self.lang_mgr.get_text("all_sources"), self)
         all_action.triggered.connect(lambda: self.filter_by_source(None))
         self.source_menu.addAction(all_action)
-        
+
         self.source_menu.addSeparator()
-        
+
         # 各个源选项
         for repo in self.repo_manager.repositories:
             if repo.enabled:
                 action = QAction(f"{repo.name} ({repo.packages_count})", self)
                 action.triggered.connect(lambda checked, r=repo: self.filter_by_source(r))
                 self.source_menu.addAction(action)
-    
+
     def filter_by_source(self, repo):
         """按源筛选 - 现在会加载指定源的包"""
         if repo:
             # 选择了特定源
             self.current_repo_filter = repo.name
             self.source_btn.setText(repo.name)
-            
+
             # 清空当前包列表
             self.all_packages.clear()
             self.filtered_packages.clear()
-            
+
             # 加载该源的包
             self.load_repo_packages(repo)
         else:
             # 选择了"所有源" - 加载所有源的包
             self.current_repo_filter = None
             self.source_btn.setText(self.lang_mgr.get_text("all_sources"))
-            
+
             # 加载所有源的包
             self.load_all_packages()
-    
+
     def update_categories(self):
         """动态更新分类标签（基于所有包）"""
         self._update_categories_internal(self.all_packages)
-    
+
     def update_categories_for_filtered_packages(self):
         """动态更新分类标签（基于筛选后的包）"""
         self._update_categories_internal(self.filtered_packages)
-    
+
     def _update_categories_internal(self, packages_list):
         """内部方法：更新分类标签"""
         # 收集所有不同的section
@@ -872,15 +974,15 @@ class PackageManagerWidget(QDialog):
                 section = package.section.split('(')[0].strip()
                 if section:
                     sections.add(section)
-        
+
         # 保存当前选中的标签索引
         current_index = self.tabs.currentIndex()
         current_tab_text = self.tabs.tabText(current_index) if current_index >= 0 else ""
-        
+
         # 清除现有的分类标签（除了"全部"）
         while self.tabs.count() > 1:
             self.tabs.removeTab(1)
-        
+
         # 清理list_widgets和list_models中的旧分类
         old_categories = list(self.list_widgets.keys())
         for cat in old_categories:
@@ -888,21 +990,21 @@ class PackageManagerWidget(QDialog):
                 del self.list_widgets[cat]
                 if cat in self.list_models:
                     del self.list_models[cat]
-        
+
         # 添加新的分类标签
         self.categories = [("all", "all")]
-        
+
         # 对sections排序并创建标签
         for section in sorted(sections):
             # 获取该分类的包数量
-            count = sum(1 for _, pkg in packages_list 
-                       if pkg.section and section in pkg.section)
-            
+            count = sum(1 for _, pkg in packages_list
+                        if pkg.section and section in pkg.section)
+
             if count > 0:  # 只添加有包的分类
                 # 尝试获取翻译，如果没有就使用原文
                 display_name = section
                 section_lower = section.lower()
-                
+
                 # 尝试映射到已知的翻译
                 if section_lower == "system":
                     display_name = self.lang_mgr.get_text("system")
@@ -914,7 +1016,7 @@ class PackageManagerWidget(QDialog):
                     display_name = self.lang_mgr.get_text("themes")
                 elif section_lower == "development":
                     display_name = self.lang_mgr.get_text("development")
-                
+
                 # 创建列表控件和模型
                 list_widget = QListView()
                 list_model = PackageListModel(self)  # 设置父对象
@@ -922,14 +1024,14 @@ class PackageManagerWidget(QDialog):
                 list_widget.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
                 # 连接点击事件
                 list_widget.clicked.connect(self.on_list_item_clicked)
-                
+
                 # 添加到标签页
                 tab_text = f"{display_name} ({count})"
                 self.tabs.addTab(list_widget, tab_text)
                 self.list_widgets[section] = list_widget
                 self.list_models[section] = list_model
                 self.categories.append((section, section))
-        
+
         # 尝试恢复之前选中的标签
         restored = False
         for i in range(self.tabs.count()):
@@ -937,11 +1039,11 @@ class PackageManagerWidget(QDialog):
                 self.tabs.setCurrentIndex(i)
                 restored = True
                 break
-        
+
         # 如果没能恢复，选择第一个标签
         if not restored and self.tabs.count() > 0:
             self.tabs.setCurrentIndex(0)
-    
+
     def load_first_repository(self):
         """加载第一个启用的源"""
         # 找到第一个启用的源
@@ -950,39 +1052,40 @@ class PackageManagerWidget(QDialog):
             if repo.enabled:
                 first_repo = repo
                 break
-        
+
         if first_repo:
             # 加载第一个源
             self.filter_by_source(first_repo)
         else:
             # 没有启用的源，显示欢迎信息
             self.show_welcome_message()
-    
+
     def show_welcome_message(self):
         """显示欢迎信息"""
         # 清空所有模型
         for model in self.list_models.values():
             model.clear()
-        
+
         # 更新状态栏
         if hasattr(self, 'status_label'):
-            self.status_label.setText(self.lang_mgr.get_text("select_source_to_start") if self.lang_mgr else "Select a repository to start")
-    
+            self.status_label.setText(
+                self.lang_mgr.get_text("select_source_to_start") if self.lang_mgr else "Select a repository to start")
+
     def show_select_source_message(self):
         """显示选择源的提示信息"""
         self.show_welcome_message()
-    
+
     def load_repo_packages(self, repo):
         """加载单个源的包"""
         try:
             # 显示加载进度
             loading_text = self.lang_mgr.get_text("loading_packages") if self.lang_mgr else "Loading packages..."
             self.status_label.setText(f"{loading_text} ({repo.name})")
-            
+
             # 清空模型数据
             for model in self.list_models.values():
                 model.clear()
-            
+
             # 加载包
             success, packages = self.repo_manager.fetch_packages(repo.url)
             if success and packages:
@@ -990,20 +1093,21 @@ class PackageManagerWidget(QDialog):
                 for package in packages:
                     if package:
                         self.all_packages.append((repo, package))
-                
+
                 # 去重处理
                 self._deduplicate_packages()
-                
+
                 # 排序
-                self.all_packages.sort(key=lambda x: x[1].get_display_name().lower() if x[1] and hasattr(x[1], 'get_display_name') else "")
-                
+                self.all_packages.sort(
+                    key=lambda x: x[1].get_display_name().lower() if x[1] and hasattr(x[1], 'get_display_name') else "")
+
                 # 设置筛选后的包
                 self.filtered_packages = self.all_packages.copy()
-                
+
                 # 更新分类和显示
                 self.update_categories_for_filtered_packages()
                 self.filter_packages()
-                
+
                 # 更新状态
                 packages_text = self.lang_mgr.get_text("packages") if self.lang_mgr else "packages"
                 msg = f"{repo.name} - {len(self.all_packages)} {packages_text}"
@@ -1011,12 +1115,12 @@ class PackageManagerWidget(QDialog):
             else:
                 failed_text = self.lang_mgr.get_text("refresh_failed") if self.lang_mgr else "Failed to load"
                 self.status_label.setText(f"{failed_text}: {repo.name}")
-                
+
         except Exception as e:
             print(f"[ERROR] 加载源包时出错: {e}")
             error_text = self.lang_mgr.get_text("error") if self.lang_mgr else "Error"
             self.status_label.setText(f"{error_text}: {str(e)}")
-    
+
     def load_all_packages(self):
         """加载所有包"""
         try:
@@ -1024,51 +1128,51 @@ class PackageManagerWidget(QDialog):
                 loading_text = self.lang_mgr.get_text("loading_packages")
             else:
                 loading_text = "Loading packages..."
-            
+
             self.status_label.setText(loading_text)
             QTimer.singleShot(100, self._load_packages_async)
         except Exception as e:
             print(f"[ERROR] load_all_packages 出错: {e}")
             import traceback
             traceback.print_exc()
-    
+
     def _load_packages_async(self):
         """异步加载包"""
         try:
             self.all_packages = []
-            
+
             if not self.repo_manager:
                 print("[ERROR] repo_manager 为 None")
                 self.status_label.setText("错误: 软件源管理器未初始化")
                 return
-            
+
             # 显示进度条
             self.progress_bar.setVisible(True)
             enabled_repos = [repo for repo in self.repo_manager.repositories if repo and repo.enabled]
             total_repos = len(enabled_repos)
-            
+
             if total_repos == 0:
                 self.status_label.setText("没有启用的软件源")
                 self.progress_bar.setVisible(False)
                 return
-            
+
             self.progress_bar.setMaximum(total_repos)
             self.progress_bar.setValue(0)
-            
+
             # 逐个处理软件源，避免界面卡死
             self.current_repo_index = 0
             self.enabled_repos = enabled_repos
             self._load_next_repo()
-            
+
         except Exception as e:
             print(f"[ERROR] _load_packages_async 出现异常: {e}")
             import traceback
             traceback.print_exc()
-            
+
             error_msg = f"错误: {str(e)}" if not self.lang_mgr else f"{self.lang_mgr.get_text('error')}: {str(e)}"
             self.status_label.setText(error_msg)
             self.progress_bar.setVisible(False)
-    
+
     def _load_next_repo(self):
         """加载下一个软件源"""
         try:
@@ -1076,20 +1180,20 @@ class PackageManagerWidget(QDialog):
                 # 所有软件源加载完成
                 self._finish_initial_loading()
                 return
-            
+
             repo = self.enabled_repos[self.current_repo_index]
             loading_text = self.lang_mgr.get_text("loading_packages") if self.lang_mgr else "Loading packages..."
             self.status_label.setText(f"{loading_text} ({repo.name})")
             self.progress_bar.setValue(self.current_repo_index)
-            
+
             # 使用QTimer让界面有机会更新
             QTimer.singleShot(10, lambda: self._process_repo(repo))
-            
+
         except Exception as e:
             print(f"[ERROR] _load_next_repo 出错: {e}")
             self.current_repo_index += 1
             QTimer.singleShot(10, self._load_next_repo)
-    
+
     def _process_repo(self, repo):
         """处理单个软件源"""
         try:
@@ -1102,46 +1206,47 @@ class PackageManagerWidget(QDialog):
                         print(f"[WARNING] 软件源 {repo.name} 中发现空包对象")
         except Exception as repo_error:
             print(f"[ERROR] 处理软件源 {repo.name} 时出错: {repo_error}")
-        
+
         # 继续处理下一个软件源
         self.current_repo_index += 1
         QTimer.singleShot(10, self._load_next_repo)
-    
+
     def _finish_initial_loading(self):
         """完成初始加载"""
         try:
             # 先进行去重处理
-            optimizing_text = self.lang_mgr.get_text("optimizing_packages") if self.lang_mgr else "Optimizing package list..."
+            optimizing_text = self.lang_mgr.get_text(
+                "optimizing_packages") if self.lang_mgr else "Optimizing package list..."
             self.status_label.setText(optimizing_text)
             self._deduplicate_packages()
-            
+
             # 按包名排序
             sorting_text = self.lang_mgr.get_text("sorting_packages") if self.lang_mgr else "Sorting package list..."
             self.status_label.setText(sorting_text)
             QTimer.singleShot(10, self._sort_and_display)
-            
+
         except Exception as e:
             print(f"[ERROR] _finish_initial_loading 出错: {e}")
             self.progress_bar.setVisible(False)
-    
+
     def _deduplicate_packages(self):
         """去重包列表，只保留每个包的最新版本"""
-        print(f"[DEBUG] 去重前包数量: {len(self.all_packages)}")
-        
+        debug(f"去重前包数量: {len(self.all_packages)}")
+
         # 清空版本历史
         self.package_versions.clear()
-        
+
         # 按照 repo_url:package_name 分组
         package_groups = {}
         for repo, package in self.all_packages:
             if not package or not hasattr(package, 'package'):
                 continue
-                
+
             key = f"{repo.url}:{package.package}"
             if key not in package_groups:
                 package_groups[key] = []
             package_groups[key].append((repo, package))
-        
+
         # 对每组包进行版本比较，只保留最新版本
         deduplicated = []
         for key, versions in package_groups.items():
@@ -1152,108 +1257,303 @@ class PackageManagerWidget(QDialog):
                 # 多个版本，需要比较
                 # 存储所有版本供后续查看
                 self.package_versions[key] = versions
-                
+
                 # 找出最新版本
                 latest = self._find_latest_version(versions)
                 deduplicated.append(latest)
-                
+
                 # 调试信息
                 if len(versions) > 5:  # 超过5个版本的包才输出
                     repo, pkg = latest
-                    print(f"[DEBUG] 包 {pkg.package} 有 {len(versions)} 个版本，保留最新版本: {pkg.version}")
-        
+                    debug(f"包 {pkg.package} 有 {len(versions)} 个版本，保留最新版本: {pkg.version}")
+
         original_count = len(self.all_packages)
         self.all_packages = deduplicated
-        print(f"[DEBUG] 去重后包数量: {len(self.all_packages)}")
-        print(f"[DEBUG] 减少了 {original_count - len(deduplicated)} 个重复包")
-    
+        debug(f"去重后包数量: {len(self.all_packages)}")
+        debug(f"减少了 {original_count - len(deduplicated)} 个重复包")
+
     def _find_latest_version(self, versions):
         """从版本列表中找出最新版本"""
         # 尝试按版本号排序
         try:
             # 使用版本字符串比较，简单实现
             # TODO: 可以使用更复杂的版本比较库
-            sorted_versions = sorted(versions, 
-                                   key=lambda x: x[1].version if x[1].version else "0",
-                                   reverse=True)
+            sorted_versions = sorted(versions,
+                                     key=lambda x: x[1].version if x[1].version else "0",
+                                     reverse=True)
             return sorted_versions[0]
         except:
             # 如果排序失败，返回第一个
             return versions[0]
-    
+
     def _sort_and_display(self):
         """排序并显示包"""
         try:
             # 排序
-            self.all_packages.sort(key=lambda x: x[1].get_display_name().lower() if x[1] and hasattr(x[1], 'get_display_name') else "")
-            
+            self.all_packages.sort(
+                key=lambda x: x[1].get_display_name().lower() if x[1] and hasattr(x[1], 'get_display_name') else "")
+
             # 更新显示
             if self.lang_mgr:
                 msg = self.lang_mgr.format_text("total_packages", len(self.all_packages))
             else:
                 msg = f"Total {len(self.all_packages)} packages"
             self.status_label.setText(msg)
-            
+
             # 隐藏进度条
             self.progress_bar.setVisible(False)
-            
+
             # 更新界面
             self.update_source_menu()
             self.update_categories()
             self.filter_packages()
-            
+
         except Exception as e:
             print(f"[ERROR] _sort_and_display 出错: {e}")
             import traceback
             traceback.print_exc()
-            
+
             error_msg = f"错误: {str(e)}" if not self.lang_mgr else f"{self.lang_mgr.get_text('error')}: {str(e)}"
             self.status_label.setText(error_msg)
             self.progress_bar.setVisible(False)
-    
+
     def filter_packages(self):
         """筛选包"""
         search_text = self.search_input.text().lower()
-        
+
         # 筛选
         self.filtered_packages = []
         for repo, pkg in self.all_packages:
             # 源筛选
             if self.current_repo_filter and repo.name != self.current_repo_filter:
                 continue
-            
+
             # 搜索筛选
             if search_text:
                 if not (search_text in pkg.package.lower() or
-                       search_text in pkg.get_display_name().lower() or
-                       search_text in (pkg.description or "").lower()):
+                        search_text in pkg.get_display_name().lower() or
+                        search_text in (pkg.description or "").lower()):
                     continue
-            
+                    
+            # 越狱模式筛选
+            if self.current_jb_filter and hasattr(pkg, 'get_jailbreak_compatibility'):
+                jb_compat = pkg.get_jailbreak_compatibility()
+                if self.current_jb_filter == "Rootless":
+                    # 只显示 Rootless 和 Both（通用）的包
+                    if jb_compat not in ["Rootless", "Both"]:
+                        continue
+                elif self.current_jb_filter == "Rootful":
+                    # 只显示 Rootful 和 Both（通用）的包
+                    if jb_compat not in ["Rootful", "Both"]:
+                        continue
+
             self.filtered_packages.append((repo, pkg))
-        
+
         # 基于筛选后的包更新分类
         self.update_categories_for_filtered_packages()
-        
+
         # 只更新当前可见的标签页（通常是"All"分类）
         current_tab = self.tabs.currentIndex()
         if current_tab < len(self.categories):
-            category = self.categories[current_tab][1] 
+            category = self.categories[current_tab][1]
             list_widget = self.list_widgets[category]
             self.update_list(list_widget, category)
         elif "all" in self.list_widgets:
             # 确保"All"分类总是更新
             self.update_list(self.list_widgets["all"], "all")
-        
+
         # 更新状态和统计信息
         self.update_statistics()
     
+    def set_jailbreak_filter(self, mode):
+        """设置越狱模式过滤器"""
+        self.current_jb_filter = mode
+        
+        # 更新按钮文本
+        if mode is None:
+            btn_text = self.lang_mgr.get_text("all") if self.lang_mgr else "All"
+        elif mode == "Rootless":
+            btn_text = self.lang_mgr.get_text("jailbreak_rootless") if self.lang_mgr else "Rootless (Modern)"
+        else:  # Rootful
+            btn_text = self.lang_mgr.get_text("jailbreak_rootful") if self.lang_mgr else "Rootful (Traditional)"
+        
+        self.jb_mode_btn.setText(btn_text)
+        
+        # 如果选择了具体的越狱模式，保存到配置
+        if mode and self.repo_manager and hasattr(self.repo_manager, 'jailbreak_config'):
+            from ..core.jailbreak_config import JailbreakMode
+            if mode == "Rootless":
+                self.repo_manager.jailbreak_config.set_mode(JailbreakMode.ROOTLESS)
+            elif mode == "Rootful":
+                self.repo_manager.jailbreak_config.set_mode(JailbreakMode.ROOTFUL)
+            # 刷新 HTTP 请求头
+            self.repo_manager.refresh_http_headers()
+        
+        # 统计包数量（更详细的统计）
+        total_count = len(self.all_packages)
+        rootless_count = 0
+        rootful_count = 0
+        universal_count = 0
+        unknown_count = 0
+        
+        for repo, pkg in self.all_packages:
+            if hasattr(pkg, 'get_jailbreak_compatibility'):
+                jb_compat = pkg.get_jailbreak_compatibility()
+                if jb_compat == "Rootless":
+                    rootless_count += 1
+                elif jb_compat == "Rootful":
+                    rootful_count += 1
+                elif jb_compat == "Both":
+                    universal_count += 1
+                else:
+                    unknown_count += 1
+        
+        # 计算过滤后的数量
+        if mode is None:
+            filtered_count = total_count
+            filter_percentage = 100
+        elif mode == "Rootless":
+            filtered_count = rootless_count + universal_count
+            filter_percentage = (filtered_count / total_count * 100) if total_count > 0 else 0
+        else:  # Rootful
+            filtered_count = rootful_count + universal_count
+            filter_percentage = (filtered_count / total_count * 100) if total_count > 0 else 0
+        
+        # 构建详细信息对话框
+        if self.lang_mgr and self.lang_mgr.get_current_language() == "zh":
+            # 中文版本
+            mode_names = {
+                None: "全部显示",
+                "Rootless": "无根越狱（Rootless）",
+                "Rootful": "有根越狱（Rootful）"
+            }
+            
+            mode_descriptions = {
+                None: "显示所有插件，不进行任何过滤\n适合浏览所有可用的插件资源",
+                "Rootless": "现代越狱模式，插件安装在 /var/jb 沙盒目录\n系统分区保持只读，更加安全稳定",
+                "Rootful": "传统越狱模式，插件直接安装到系统目录\n拥有完整的系统权限和修改能力"
+            }
+            
+            filter_rules = {
+                None: "• 显示所有插件（无过滤）\n• 包括 Rootless、Rootful 和通用插件\n• 请根据您的越狱类型选择合适的插件",
+                "Rootless": "• 显示带有 [RL] 标记的 Rootless 专用插件\n• 显示带有 [U] 标记的通用插件\n• 隐藏带有 [RF] 标记的 Rootful 专用插件",
+                "Rootful": "• 显示带有 [RF] 标记的 Rootful 专用插件\n• 显示带有 [U] 标记的通用插件\n• 隐藏带有 [RL] 标记的 Rootless 专用插件"
+            }
+            
+            title = f"越狱模式筛选 - {mode_names[mode]}"
+            
+            # 获取常见越狱工具列表
+            common_jailbreaks = {
+                "Rootless": "• Dopamine (iOS 15.0-16.6.1)\n• Palera1n -l (iOS 15.0+)\n• XinaA15 (iOS 15.0-15.1.1)",
+                "Rootful": "• Checkra1n (iOS 12.0-14.8.1)\n• Unc0ver (iOS 11.0-14.8)\n• Taurine (iOS 14.0-14.3)\n• Odyssey (iOS 13.0-13.7)"
+            }
+            
+            message = f"""<h3>当前模式：{mode_names[mode]}</h3>
+
+<b>模式说明：</b>
+{mode_descriptions[mode]}
+
+<b>过滤规则：</b>
+{filter_rules[mode]}
+
+<b>统计信息：</b>
+<table>
+<tr><td>• 插件总数：</td><td align="right">{total_count} 个</td></tr>
+<tr><td>• Rootless 专用：</td><td align="right">{rootless_count} 个</td></tr>
+<tr><td>• Rootful 专用：</td><td align="right">{rootful_count} 个</td></tr>
+<tr><td>• 通用插件：</td><td align="right">{universal_count} 个</td></tr>
+<tr><td>• 未知兼容性：</td><td align="right">{unknown_count} 个</td></tr>
+<tr><td><b>• 当前显示：</b></td><td align="right"><b>{filtered_count} 个 ({filter_percentage:.1f}%)</b></td></tr>
+</table>
+
+<b>常见越狱工具：</b>
+{common_jailbreaks.get(mode, '• 适用于所有越狱工具')}
+
+<b>使用提示：</b>
+• 选择与您设备越狱类型匹配的模式，避免安装不兼容的插件
+• 不确定越狱类型？检查是否存在 /var/jb 目录
+• 可随时切换筛选模式或返回"全部"查看所有插件
+• 越狱模式设置已自动保存，下次启动时会记住您的选择"""
+            
+        else:
+            # English version
+            mode_names = {
+                None: "Show All",
+                "Rootless": "Rootless",
+                "Rootful": "Rootful"
+            }
+            
+            mode_descriptions = {
+                None: "Display all packages without filtering\nBest for browsing all available package resources",
+                "Rootless": "Modern jailbreak mode with packages in /var/jb sandbox\nSystem partition remains read-only for better security",
+                "Rootful": "Traditional jailbreak with packages in system directories\nFull system access and modification capabilities"
+            }
+            
+            filter_rules = {
+                None: "• Show all packages (no filtering)\n• Including Rootless, Rootful and Universal packages\n• Choose packages matching your jailbreak type",
+                "Rootless": "• Show packages marked with [RL] for Rootless\n• Show universal packages marked with [U]\n• Hide packages marked with [RF] for Rootful only",
+                "Rootful": "• Show packages marked with [RF] for Rootful\n• Show universal packages marked with [U]\n• Hide packages marked with [RL] for Rootless only"
+            }
+            
+            title = f"Jailbreak Mode Filter - {mode_names[mode]}"
+            
+            # Common jailbreak tools
+            common_jailbreaks = {
+                "Rootless": "• Dopamine (iOS 15.0-16.6.1)\n• Palera1n -l (iOS 15.0+)\n• XinaA15 (iOS 15.0-15.1.1)",
+                "Rootful": "• Checkra1n (iOS 12.0-14.8.1)\n• Unc0ver (iOS 11.0-14.8)\n• Taurine (iOS 14.0-14.3)\n• Odyssey (iOS 13.0-13.7)"
+            }
+            
+            message = f"""<h3>Current Mode: {mode_names[mode]}</h3>
+
+<b>Description:</b>
+{mode_descriptions[mode]}
+
+<b>Filter Rules:</b>
+{filter_rules[mode]}
+
+<b>Statistics:</b>
+<table>
+<tr><td>• Total packages:</td><td align="right">{total_count}</td></tr>
+<tr><td>• Rootless only:</td><td align="right">{rootless_count}</td></tr>
+<tr><td>• Rootful only:</td><td align="right">{rootful_count}</td></tr>
+<tr><td>• Universal:</td><td align="right">{universal_count}</td></tr>
+<tr><td>• Unknown:</td><td align="right">{unknown_count}</td></tr>
+<tr><td><b>• Currently showing:</b></td><td align="right"><b>{filtered_count} ({filter_percentage:.1f}%)</b></td></tr>
+</table>
+
+<b>Common Jailbreak Tools:</b>
+{common_jailbreaks.get(mode, '• Works with all jailbreak tools')}
+
+<b>Tips:</b>
+• Select the mode matching your device's jailbreak type to avoid incompatible packages
+• Not sure about your jailbreak type? Check if /var/jb directory exists
+• You can switch filter modes anytime or go back to "All" to see everything
+• Your jailbreak mode preference is automatically saved for next time"""
+        
+        # 显示详细信息对话框
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(title)
+        msg_box.setTextFormat(Qt.TextFormat.RichText)
+        msg_box.setText(message)
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        
+        # 设置对话框大小
+        msg_box.setMinimumWidth(600)
+        
+        msg_box.exec()
+        
+        # 重新筛选包
+        self.filter_packages()
+    
+
     def update_list(self, list_widget, category):
         """更新列表显示 - 使用模型更新"""
         # 获取对应的模型
         model = self.list_models.get(category)
         if not model:
             return
-            
+
         # 筛选分类
         if category == "all":
             packages = self.filtered_packages
@@ -1262,13 +1562,13 @@ class PackageManagerWidget(QDialog):
                 (repo, pkg) for repo, pkg in self.filtered_packages
                 if pkg and pkg.section and category in pkg.section
             ]
-        
+
         # 设置模型数据
         model.set_packages(packages)
-        
+
         # 更新勾选状态
         model.checked_items = self.checked_items.copy()
-    
+
     def _show_loading_dialog_and_load(self, list_widget, packages, category):
         """使用线程显示加载对话框并加载所有包"""
         # 创建进度对话框
@@ -1280,21 +1580,21 @@ class PackageManagerWidget(QDialog):
             title = "Loading Packages"
             label = f"Loading {len(packages)} packages, please wait..."
             cancel_text = "Cancel"
-        
+
         progress_dialog = QProgressDialog(label, cancel_text, 0, len(packages), self)
         progress_dialog.setWindowTitle(title)
         progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
         progress_dialog.setMinimumDuration(0)  # 立即显示
         progress_dialog.setValue(0)
-        
+
         # 停止之前的加载线程
         if self.load_worker and self.load_worker.isRunning():
             self.load_worker.cancel()
             self.load_worker.wait()
-        
+
         # 创建新的加载线程
         self.load_worker = PackageLoadWorker(packages, self.checked_items)
-        
+
         # 连接信号
         self.load_worker.progress_update.connect(
             lambda current, total, msg: self._update_progress(progress_dialog, current, total, msg)
@@ -1305,33 +1605,33 @@ class PackageManagerWidget(QDialog):
         self.load_worker.finished_loading.connect(
             lambda: self._finish_loading(progress_dialog, list_widget, len(packages))
         )
-        
+
         # 处理取消
         progress_dialog.canceled.connect(lambda: self._cancel_thread_loading(progress_dialog))
-        
+
         # 启动线程
         self.load_worker.start()
-    
+
     def _update_progress(self, progress_dialog, current, total, message):
         """更新进度对话框"""
         progress_dialog.setValue(current)
         progress_dialog.setLabelText(message)
-    
+
     def _process_batch(self, list_widget, batch_data):
         """处理一批数据 - 在主线程中创建UI组件"""
         # 禁用更新以提升性能
         list_widget.setUpdatesEnabled(False)
-        
+
         for data in batch_data:
             # 创建列表项
             item = QListWidgetItem()
             list_widget.addItem(item)
-            
+
             # 创建widget
             widget = PackageListItemWidget()
             widget.set_package_data(data['repo'], data['package'], data['package_key'])
             widget.set_checked(data['is_checked'])
-            
+
             # 连接信号（使用闭包变量避免引用问题）
             package_key = data['package_key']
             repo = data['repo']
@@ -1342,14 +1642,14 @@ class PackageManagerWidget(QDialog):
             widget.item_clicked.connect(
                 lambda r=repo, p=package: self.on_package_info_clicked(r, p)
             )
-            
+
             # 设置item大小
             item.setSizeHint(widget.sizeHint())
             list_widget.setItemWidget(item, widget)
-        
+
         # 重新启用更新
         list_widget.setUpdatesEnabled(True)
-    
+
     def _finish_loading(self, progress_dialog, list_widget, total_packages):
         """完成加载"""
         progress_dialog.close()
@@ -1359,32 +1659,34 @@ class PackageManagerWidget(QDialog):
             else:
                 msg = f"Total {total_packages} packages"
             self.status_label.setText(msg)
-    
+
     def _cancel_thread_loading(self, progress_dialog):
         """取消线程加载"""
         if self.load_worker:
             self.load_worker.cancel()
         progress_dialog.close()
         if hasattr(self, 'status_label'):
-            self.status_label.setText(self.lang_mgr.get_text("loading_cancelled") if self.lang_mgr else "Loading cancelled")
-    
+            self.status_label.setText(
+                self.lang_mgr.get_text("loading_cancelled") if self.lang_mgr else "Loading cancelled")
+
     def _cancel_loading(self, progress_dialog):
         """取消加载（旧方法）"""
         self.loading_canceled = True
         progress_dialog.close()
         if hasattr(self, 'status_label'):
-            self.status_label.setText(self.lang_mgr.get_text("loading_cancelled") if self.lang_mgr else "Loading cancelled")
-    
+            self.status_label.setText(
+                self.lang_mgr.get_text("loading_cancelled") if self.lang_mgr else "Loading cancelled")
+
     def _load_packages_with_progress(self, list_widget, packages, progress_dialog):
         """带进度的包加载 - 极速优化版"""
         batch_size = 5000  # 每批处理5000个包，极速加载
         current_index = 0
         total_packages = len(packages)
         update_interval = max(500, total_packages // 10)  # 每10%更新一次进度文本
-        
+
         def load_batch():
             nonlocal current_index
-            
+
             if self.loading_canceled or current_index >= total_packages:
                 list_widget.setUpdatesEnabled(True)
                 progress_dialog.close()
@@ -1397,13 +1699,13 @@ class PackageManagerWidget(QDialog):
                             msg = f"Total {total_packages} packages"
                         self.status_label.setText(msg)
                 return
-            
+
             # 禁用更新以提升性能
             list_widget.setUpdatesEnabled(False)
-            
+
             # 处理当前批次
             end_index = min(current_index + batch_size, total_packages)
-            
+
             # 批量创建widgets
             items_to_add = []
             for i in range(current_index, end_index):
@@ -1414,19 +1716,19 @@ class PackageManagerWidget(QDialog):
                     item_data = self._create_package_item(repo, package, i)
                     if item_data:
                         items_to_add.append(item_data)
-            
+
             # 批量添加到列表
             for item, widget in items_to_add:
                 list_widget.addItem(item)
                 list_widget.setItemWidget(item, widget)
-            
+
             # 重新启用更新
             list_widget.setUpdatesEnabled(True)
-            
+
             # 更新进度
             current_index = end_index
             progress_dialog.setValue(current_index)
-            
+
             # 更新进度文本（减少更新频率）
             if current_index % update_interval == 0 or current_index >= total_packages:
                 if self.lang_mgr:
@@ -1434,41 +1736,41 @@ class PackageManagerWidget(QDialog):
                 else:
                     label = f"Loading packages... ({current_index}/{total_packages})"
                 progress_dialog.setLabelText(label)
-            
+
             # 处理事件保持界面响应
             QApplication.processEvents()
-            
+
             # 继续下一批（减少延迟）
             if not self.loading_canceled:
                 QTimer.singleShot(1, load_batch)
-        
+
         # 开始加载
         QTimer.singleShot(1, load_batch)
-    
+
     def _load_packages_directly(self, list_widget, packages):
         """直接加载少量包（无对话框）- 优化版"""
         # 禁用更新
         list_widget.setUpdatesEnabled(False)
-        
+
         # 批量创建和添加
         items_to_add = []
         for i, (repo, package) in enumerate(packages):
             item_data = self._create_package_item(repo, package, i)
             if item_data:
                 items_to_add.append(item_data)
-            
+
             # 每100个处理一次事件，避免UI冻结
             if i % 100 == 0:
                 QApplication.processEvents()
-        
+
         # 批量添加到列表
         for item, widget in items_to_add:
             list_widget.addItem(item)
             list_widget.setItemWidget(item, widget)
-        
+
         # 重新启用更新
         list_widget.setUpdatesEnabled(True)
-        
+
         # 更新状态
         if hasattr(self, 'status_label'):
             if self.lang_mgr:
@@ -1476,28 +1778,27 @@ class PackageManagerWidget(QDialog):
             else:
                 msg = f"Total {len(packages)} packages"
             self.status_label.setText(msg)
-    
-    
+
     def _create_package_item(self, repo, package, index):
         """创建包列表项（优化版，不直接添加到列表）"""
         try:
             if not repo or not package:
                 return None
-            
+
             # 创建列表项
             item = QListWidgetItem()
-            
+
             # 创建自定义widget
             widget = PackageListItemWidget()
-            
+
             # 设置包数据
             package_key = f"{repo.url}:{package.package}"
             widget.set_package_data(repo, package, package_key)
-            
+
             # 设置勾选状态
             is_checked = self.checked_items.get(package_key, False)
             widget.set_checked(is_checked)
-            
+
             # 连接信号
             widget.checkbox_toggled.connect(
                 lambda checked, key=package_key, w=widget: self.on_checkbox_toggled(key, checked, w)
@@ -1505,16 +1806,16 @@ class PackageManagerWidget(QDialog):
             widget.item_clicked.connect(
                 lambda r=repo, p=package: self.on_package_info_clicked(r, p)
             )
-            
+
             # 设置item大小以适应widget
             item.setSizeHint(widget.sizeHint())
-            
+
             return (item, widget)
-            
+
         except Exception as widget_error:
             print(f"[ERROR] 创建包widget时出错 (索引 {index}): {widget_error}")
             return None
-    
+
     def _add_package_to_list(self, list_widget, repo, package, index):
         """添加单个包到列表（保留原方法用于直接加载）"""
         item_data = self._create_package_item(repo, package, index)
@@ -1522,76 +1823,76 @@ class PackageManagerWidget(QDialog):
             item, widget = item_data
             list_widget.addItem(item)
             list_widget.setItemWidget(item, widget)
-    
+
     def on_checkbox_toggled(self, package_key, checked, widget):
         """复选框状态改变时"""
         # 更新勾选状态
         self.checked_items[package_key] = checked
-        
+
         # 更新选中的包列表
         self.update_selected_packages()
-    
+
     def on_model_checkbox_toggled(self, package_key, checked):
         """模型复选框状态改变时"""
         # 更新全局勾选状态
         self.checked_items[package_key] = checked
-        
+
         # 同步到所有模型
         for model in self.list_models.values():
             if package_key in model.checked_items:
                 model.checked_items[package_key] = checked
-        
+
         # 更新选中的包列表
         self.update_selected_packages()
-    
+
     def on_list_item_clicked(self, index):
         """列表项点击事件处理"""
         if not index.isValid():
             return
-            
+
         # 获取数据
         model = index.model()
         repo, package = model.data(index, Qt.ItemDataRole.UserRole)
-        
+
         # 如果点击的是复选框区域，切换勾选状态
         check_state = model.data(index, Qt.ItemDataRole.CheckStateRole)
         if check_state == Qt.CheckState.Checked:
             model.setData(index, Qt.CheckState.Unchecked, Qt.ItemDataRole.CheckStateRole)
         else:
             model.setData(index, Qt.CheckState.Checked, Qt.ItemDataRole.CheckStateRole)
-            
+
         # 更新包信息显示
         self.on_package_info_clicked(repo, package)
-        
+
         # 更新选中的包列表
         self.update_selected_packages()
-    
+
     def on_package_info_clicked(self, repo, package):
         """点击包信息时 - 显示详情并高亮选中行"""
         # 获取该包的所有版本
         package_key = f"{repo.url}:{package.package}"
         package_versions = self.package_versions.get(package_key, None)
-        
+
         # 显示包详情
         self.detail_widget.show_package(repo, package, package_versions)
-        
+
         # 高亮当前选中的包
         self.highlight_package_item(repo, package)
-    
+
     def highlight_package_item(self, repo, package):
         """高亮指定的包项"""
         package_key = f"{repo.url}:{package.package}"
         current_tab = self.tabs.currentIndex()
-        
+
         if current_tab < len(self.categories):
             category = self.categories[current_tab][1]
             list_widget = self.list_widgets[category]
             model = self.list_models.get(category)
-            
+
             if model:
                 # 清除所有现有选择
                 list_widget.clearSelection()
-                
+
                 # 找到并高亮对应的item
                 for i, (repo, pkg) in enumerate(model.packages):
                     if f"{repo.url}:{pkg.package}" == package_key:
@@ -1599,17 +1900,16 @@ class PackageManagerWidget(QDialog):
                         list_widget.setCurrentIndex(index)
                         list_widget.scrollTo(index)
                         break
-    
-    
+
     def on_package_clicked(self, list_widget, item):
         """单击包时 - 此方法现已被替代，但保留以兼容旧代码"""
         pass
-    
+
     def update_selected_packages(self):
         """更新选中的包列表"""
         self.selected_packages = []
         seen_keys = set()  # 用于去重
-        
+
         # 从所有模型中获取勾选的包
         for category, model in self.list_models.items():
             checked = model.get_checked_packages()
@@ -1618,23 +1918,54 @@ class PackageManagerWidget(QDialog):
                 if package_key not in seen_keys:
                     seen_keys.add(package_key)
                     self.selected_packages.append((repo, package))
-        
+
         # 更新批量下载按钮状态
         self.batch_download_btn.setEnabled(len(self.selected_packages) > 0)
         if len(self.selected_packages) > 0:
-            self.batch_download_btn.setText(f"{self.lang_mgr.get_text('batch_download')} ({len(self.selected_packages)})")
+            self.batch_download_btn.setText(
+                f"{self.lang_mgr.get_text('batch_download')} ({len(self.selected_packages)})")
         else:
             self.batch_download_btn.setText(self.lang_mgr.get_text("batch_download"))
-        
+
         # 更新统计信息
         self.update_statistics()
-    
+
     def download_package(self, repo, package):
         """下载包"""
         if self.download_worker and self.download_worker.isRunning():
             QMessageBox.warning(self, self.lang_mgr.get_text("warning"), self.lang_mgr.get_text("download_in_progress"))
             return
         
+
+        # 检查架构兼容性（如果有连接的设备）
+        from src.core.app import TweakEditorApp
+        app_instance = TweakEditorApp.get_instance()
+        if app_instance and hasattr(app_instance, 'current_device') and app_instance.current_device:
+            device = app_instance.current_device
+            device_arch = device.cpu_architecture
+            
+            # 如果包有架构信息，检查兼容性
+            if package.architecture and device_arch != "Unknown":
+                # 使用 Package 类的内置方法检查架构兼容性
+                if not package.is_architecture_compatible(device_arch):
+                    # 显示架构警告
+                    warning_msg = self.lang_mgr.get_text("architecture_warning")
+                    if warning_msg:
+                        warning_msg = warning_msg.replace("{package_arch}", package.architecture)
+                        warning_msg = warning_msg.replace("{device_arch}", device_arch)
+                    else:
+                        warning_msg = f"Warning: Package architecture ({package.architecture}) may not be compatible with your device ({device_arch}).\n\nContinue anyway?"
+                    
+                    reply = QMessageBox.warning(
+                        self,
+                        self.lang_mgr.get_text("architecture_mismatch") or "Architecture Mismatch",
+                        warning_msg,
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                    )
+                    
+                    if reply != QMessageBox.StandardButton.Yes:
+                        return
+
         # 创建下载任务
         from src.workers.download_thread import DownloadWorker
         self.download_worker = DownloadWorker(
@@ -1643,41 +1974,42 @@ class PackageManagerWidget(QDialog):
         self.download_worker.progress.connect(self.on_download_progress)
         self.download_worker.status.connect(self.on_download_status)
         self.download_worker.finished.connect(self.on_download_finished)
-        
+
         self.progress_bar.setVisible(True)
         self.download_worker.start()
     
+
     def on_download_progress(self, percent, downloaded, total):
         """下载进度"""
         self.progress_bar.setValue(percent)
-    
+
     def on_download_status(self, status):
         """下载状态"""
         # 临时显示下载状态
         self.status_label.setText(status)
-    
+
     def on_download_finished(self, success, result):
         """下载完成"""
         self.progress_bar.setVisible(False)
-        
+
         if success:
             self.package_downloaded.emit(result)
             # 使用简单的成功消息
             filename = os.path.basename(result)
             msg = f"下载成功: {filename}" if self.lang_mgr and self.lang_mgr.get_current_language() == "zh" else f"Download successful: {filename}"
-            QMessageBox.information(self, 
-                                  self.lang_mgr.get_text("success"), 
-                                  msg)
+            QMessageBox.information(self,
+                                    self.lang_mgr.get_text("success"),
+                                    msg)
         else:
-            QMessageBox.warning(self, 
-                               self.lang_mgr.get_text("error"), 
-                               result)
-        
+            QMessageBox.warning(self,
+                                self.lang_mgr.get_text("error"),
+                                result)
+
         self.download_worker = None
-        
+
         # 恢复状态显示
         self.filter_packages()
-    
+
     def refresh_packages(self):
         """刷新包列表"""
         if self.current_repo_filter:
@@ -1685,38 +2017,44 @@ class PackageManagerWidget(QDialog):
             for repo in self.repo_manager.repositories:
                 if repo.name == self.current_repo_filter:
                     # 使用翻译文本
-                    refreshing_text = self.lang_mgr.get_text("refreshing_repo") if self.lang_mgr else "Refreshing {0}..."
-                    self.status_label.setText(refreshing_text.format(repo.name) if "{0}" in refreshing_text else f"Refreshing {repo.name}...")
-                    
+                    refreshing_text = self.lang_mgr.get_text(
+                        "refreshing_repo") if self.lang_mgr else "Refreshing {0}..."
+                    self.status_label.setText(
+                        refreshing_text.format(repo.name) if "{0}" in refreshing_text else f"Refreshing {repo.name}...")
+
                     # 刷新包数据
                     success, packages = self.repo_manager.fetch_packages(repo.url, force_refresh=True)
-                    
+
                     if success:
                         # 加载刷新后的包
                         self.load_repo_packages(repo)
                         # 显示成功提示
-                        refresh_complete_text = self.lang_mgr.get_text("refresh_complete") if self.lang_mgr else "Refresh complete"
+                        refresh_complete_text = self.lang_mgr.get_text(
+                            "refresh_complete") if self.lang_mgr else "Refresh complete"
                         QMessageBox.information(self,
-                                              self.lang_mgr.get_text("success"),
-                                              f"{refresh_complete_text}: {repo.name} ({len(packages)} {self.lang_mgr.get_text('packages') if self.lang_mgr else 'packages'})")
+                                                self.lang_mgr.get_text("success"),
+                                                f"{refresh_complete_text}: {repo.name} ({len(packages)} {self.lang_mgr.get_text('packages') if self.lang_mgr else 'packages'})")
                     else:
                         # 显示失败提示
-                        refresh_failed_text = self.lang_mgr.get_text("refresh_failed") if self.lang_mgr else "Refresh failed"
+                        refresh_failed_text = self.lang_mgr.get_text(
+                            "refresh_failed") if self.lang_mgr else "Refresh failed"
                         QMessageBox.warning(self,
-                                          self.lang_mgr.get_text("error"),
-                                          f"{refresh_failed_text}: {repo.name}")
+                                            self.lang_mgr.get_text("error"),
+                                            f"{refresh_failed_text}: {repo.name}")
                     break
         else:
             # 刷新所有源
-            refresh_all_text = self.lang_mgr.get_text("refresh_all_confirm") if self.lang_mgr else "Refresh all repositories?"
+            refresh_all_text = self.lang_mgr.get_text(
+                "refresh_all_confirm") if self.lang_mgr else "Refresh all repositories?"
             refresh_all_title = self.lang_mgr.get_text("refresh_all") if self.lang_mgr else "Refresh All"
-            
+
             reply = QMessageBox.question(self, refresh_all_title, refresh_all_text)
             if reply == QMessageBox.StandardButton.Yes:
                 # 执行全部刷新
-                self.status_label.setText(self.lang_mgr.get_text("refreshing_all") if self.lang_mgr else "Refreshing all repositories...")
+                self.status_label.setText(
+                    self.lang_mgr.get_text("refreshing_all") if self.lang_mgr else "Refreshing all repositories...")
                 self.load_all_packages()
-    
+
     def open_repo_manager(self):
         """打开源管理器"""
         # 获取主窗口
@@ -1732,43 +2070,43 @@ class PackageManagerWidget(QDialog):
                 self.update_source_menu()
                 # 重新加载包
                 self.load_all_packages()
-    
+
     def on_search_text_changed(self, text):
         """搜索文本改变时触发"""
         # 停止之前的定时器
         self.search_timer.stop()
-        
+
         # 如果文本为空，立即显示所有包
         if not text.strip():
             self.filter_packages()
         else:
             # 延迟300ms执行搜索，避免频繁搜索
             self.search_timer.start(300)
-    
+
     def perform_search(self):
         """执行搜索（实时搜索）"""
         search_text = self.search_input.text().strip()
-        
+
         # 如果搜索文本为空，显示当前源或所有源的包
         if not search_text:
             self.filter_packages()
             return
-        
+
         # 执行搜索过滤
         self.filter_packages()
-    
+
     def perform_global_search(self):
         """执行全局搜索（搜索所有源）"""
         search_text = self.search_input.text().strip()
         if not search_text:
             return  # 空搜索不提示，直接返回
-        
+
         # 如果当前没有选择特定源，则执行全局搜索
         if not self.current_repo_filter:
             # 已经在所有源中，只需要过滤即可
             self.filter_packages()
             return
-        
+
         # 显示搜索进度对话框
         progress = QProgressDialog(
             f"正在搜索 '{search_text}'..." if self.lang_mgr else f"Searching for '{search_text}'...",
@@ -1779,69 +2117,72 @@ class PackageManagerWidget(QDialog):
         progress.setWindowModality(Qt.WindowModality.WindowModal)
         progress.setMinimumDuration(0)
         progress.show()
-        
+
         # 清空当前列表
         self.all_packages.clear()
         self.filtered_packages.clear()
-        
+
         # 搜索所有启用的源
         found_count = 0
         for i, repo in enumerate(self.repo_manager.repositories):
             if progress.wasCanceled():
                 break
-                
+
             progress.setValue(i)
             QApplication.processEvents()
-            
+
             if repo.enabled:
                 success, packages = self.repo_manager.fetch_packages(repo.url)
                 if success and packages:
                     for package in packages:
                         if package and search_text.lower() in (
-                            package.package.lower() + " " + 
-                            package.get_display_name().lower() + " " + 
-                            (package.description or "").lower()
+                                package.package.lower() + " " +
+                                package.get_display_name().lower() + " " +
+                                (package.description or "").lower()
                         ):
                             self.all_packages.append((repo, package))
                             found_count += 1
-        
+
         progress.close()
-        
+
         # 处理搜索结果
         if found_count > 0:
             # 去重
             self._deduplicate_packages()
-            
+
             # 排序
-            self.all_packages.sort(key=lambda x: x[1].get_display_name().lower() if x[1] and hasattr(x[1], 'get_display_name') else "")
-            
+            self.all_packages.sort(
+                key=lambda x: x[1].get_display_name().lower() if x[1] and hasattr(x[1], 'get_display_name') else "")
+
             # 设置筛选结果
             self.filtered_packages = self.all_packages.copy()
-            
+
             # 更新显示
             self.update_categories_for_filtered_packages()
             self.filter_packages()
-            
+
             # 更新状态
-            msg = self.lang_mgr.format_text("found_packages", len(self.all_packages)) if self.lang_mgr else f"Found {len(self.all_packages)} matching packages"
+            msg = self.lang_mgr.format_text("found_packages",
+                                            len(self.all_packages)) if self.lang_mgr else f"Found {len(self.all_packages)} matching packages"
             self.status_label.setText(msg)
-            
+
             # 清空源筛选
             self.current_repo_filter = None
             self.source_btn.setText(self.lang_mgr.get_text("all_sources") if self.lang_mgr else "All Sources")
         else:
             # 没有找到结果
             QMessageBox.information(self,
-                                  self.lang_mgr.get_text("search_results") if self.lang_mgr else "Search Results",
-                                  self.lang_mgr.format_text("no_packages_found", search_text) if self.lang_mgr else f"No packages found containing '{search_text}'")
+                                    self.lang_mgr.get_text("search_results") if self.lang_mgr else "Search Results",
+                                    self.lang_mgr.format_text("no_packages_found",
+                                                              search_text) if self.lang_mgr else f"No packages found containing '{search_text}'")
             self.show_welcome_message()
-    
+
     def update_statistics(self):
         """更新统计信息"""
         # 更新包统计
         total_text = self.lang_mgr.format_text("showing_packages", len(self.filtered_packages))
         self.stats_label.setText(total_text)
-        
+
         # 更新选中统计
         selected_count = len([item for item in self.checked_items.values() if item])
         if selected_count > 0:
@@ -1849,22 +2190,25 @@ class PackageManagerWidget(QDialog):
             self.selection_stats_label.setText(selection_text)
         else:
             self.selection_stats_label.setText("")
-        
+
         # 更新筛选信息
         filter_parts = []
         if self.current_repo_filter:
             filter_parts.append(self.lang_mgr.format_text('from_source', self.current_repo_filter))
         if self.search_input.text():
             filter_parts.append(f"{self.lang_mgr.get_text('search')}: {self.search_input.text()}")
-        
+        if self.current_jb_filter:
+            jb_text = self.lang_mgr.get_text(f"jailbreak_{self.current_jb_filter.lower()}") if self.lang_mgr else self.current_jb_filter
+            filter_parts.append(f"{self.lang_mgr.get_text('jailbreak_mode') if self.lang_mgr else 'Jailbreak'}: {jb_text}")
+
         if filter_parts:
             self.filter_info_label.setText(" | ".join(filter_parts))
         else:
             self.filter_info_label.setText(self.lang_mgr.get_text("all_packages"))
-        
+
         # 更新状态标签
         self.status_label.setText(self.lang_mgr.get_text("ready"))
-    
+
     def open_download_folder(self):
         """打开下载文件夹"""
         if os.path.exists(self.download_path):
@@ -1874,12 +2218,12 @@ class PackageManagerWidget(QDialog):
                 os.system(f"open '{self.download_path}'")
             else:
                 os.system(f"xdg-open '{self.download_path}'")
-    
+
     def clear_all_selections(self):
         """清除所有选择"""
         self.checked_items.clear()
         self.selected_packages.clear()
-        
+
         # 清除所有模型的勾选状态
         for model in self.list_models.values():
             model.checked_items.clear()
@@ -1890,34 +2234,34 @@ class PackageManagerWidget(QDialog):
                     model.index(len(model.packages) - 1, 0),
                     [Qt.ItemDataRole.CheckStateRole]
                 )
-        
+
         # 更新按钮状态
         self.batch_download_btn.setEnabled(False)
         self.batch_download_btn.setText(self.lang_mgr.get_text("batch_download"))
         self.select_all_btn.setText(self.lang_mgr.get_text("select_all"))
-        
+
         # 更新统计信息
         self.update_statistics()
-    
+
     def change_download_path(self):
         """更改下载路径"""
-        path = QFileDialog.getExistingDirectory(self, 
-                                               self.lang_mgr.get_text("select_download_directory"),
-                                               self.download_path)
+        path = QFileDialog.getExistingDirectory(self,
+                                                self.lang_mgr.get_text("select_download_directory"),
+                                                self.download_path)
         if path:
             self.download_path = path
             self.path_label.setText(path)
-    
+
     def toggle_select_all(self):
         """全选或取消全选"""
         # 获取当前标签页的列表和模型
         current_tab = self.tabs.currentIndex()
         current_category = self.categories[current_tab][1]
         model = self.list_models.get(current_category)
-        
+
         if not model or not model.packages:
             return
-            
+
         # 检查是否有未勾选的项
         has_unchecked = False
         for repo, package in model.packages:
@@ -1925,68 +2269,71 @@ class PackageManagerWidget(QDialog):
             if not model.checked_items.get(package_key, False):
                 has_unchecked = True
                 break
-        
+
         # 如果有未勾选的，则全选；否则取消全选
         for repo, package in model.packages:
             package_key = f"{repo.url}:{package.package}"
             model.checked_items[package_key] = has_unchecked
             self.checked_items[package_key] = has_unchecked
-        
+
         # 触发模型更新
         model.dataChanged.emit(
             model.index(0, 0),
             model.index(len(model.packages) - 1, 0),
             [Qt.ItemDataRole.CheckStateRole]
         )
-        
+
         # 更新选中的包列表
         self.update_selected_packages()
-        
+
         # 更新按钮文本
         if has_unchecked:
             self.select_all_btn.setText(self.lang_mgr.get_text("deselect_all"))
         else:
             self.select_all_btn.setText(self.lang_mgr.get_text("select_all"))
-    
+
     def batch_download(self):
         """批量下载选中的包"""
         if not self.selected_packages:
             return
-        
+
         if self.download_worker and self.download_worker.isRunning():
             QMessageBox.warning(self, self.lang_mgr.get_text("warning"), self.lang_mgr.get_text("download_in_progress"))
             return
-        
+
         # 确认批量下载
-        reply = QMessageBox.question(self, 
-                                   self.lang_mgr.get_text("confirm_download"),
-                                   self.lang_mgr.format_text("download_packages_question", len(self.selected_packages)),
-                                   QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        
+        reply = QMessageBox.question(self,
+                                     self.lang_mgr.get_text("confirm_download"),
+                                     self.lang_mgr.format_text("download_packages_question",
+                                                               len(self.selected_packages)),
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
         if reply == QMessageBox.StandardButton.Yes:
             # 创建批量下载任务
             self.batch_download_queue = list(self.selected_packages)
             self.batch_download_total = len(self.batch_download_queue)
             self.batch_download_current = 0
             self._start_next_download()
-    
+
     def _start_next_download(self):
         """开始下一个下载"""
         if not self.batch_download_queue:
             # 批量下载完成
-            QMessageBox.information(self, 
-                                  self.lang_mgr.get_text("success"),
-                                  self.lang_mgr.format_text("batch_download_complete", self.batch_download_total))
+            QMessageBox.information(self,
+                                    self.lang_mgr.get_text("success"),
+                                    self.lang_mgr.format_text("batch_download_complete", self.batch_download_total))
             return
-        
+
         # 取出下一个包
         repo, package = self.batch_download_queue.pop(0)
         self.batch_download_current += 1
-        
+
         # 更新状态
-        status_text = self.lang_mgr.format_text("batch_downloading", self.batch_download_current, self.batch_download_total, package.get_display_name()) if self.lang_mgr else f"Batch downloading ({self.batch_download_current}/{self.batch_download_total}): {package.get_display_name()}"
+        status_text = self.lang_mgr.format_text("batch_downloading", self.batch_download_current,
+                                                self.batch_download_total,
+                                                package.get_display_name()) if self.lang_mgr else f"Batch downloading ({self.batch_download_current}/{self.batch_download_total}): {package.get_display_name()}"
         self.status_label.setText(status_text)
-        
+
         # 创建下载任务
         from src.workers.download_thread import DownloadWorker
         self.download_worker = DownloadWorker(
@@ -1995,64 +2342,206 @@ class PackageManagerWidget(QDialog):
         self.download_worker.progress.connect(self.on_download_progress)
         self.download_worker.status.connect(self.on_download_status)
         self.download_worker.finished.connect(self._on_batch_download_finished)
-        
+
         self.progress_bar.setVisible(True)
         self.download_worker.start()
-    
+
     def _on_batch_download_finished(self, success, result):
         """批量下载中单个文件完成"""
         if success:
             self.package_downloaded.emit(result)
-        
+
         self.download_worker = None
-        
+
         # 继续下一个
         QTimer.singleShot(100, self._start_next_download)
-    
+
+    def open_custom_headers_dialog(self):
+        """打开自定义请求头对话框"""
+        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QDialogButtonBox, QLabel
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle(self.lang_mgr.get_text("custom_headers") if self.lang_mgr else "Custom Headers")
+        dialog.resize(600, 500)
+
+        layout = QVBoxLayout()
+
+        # 说明文本
+        if self.lang_mgr:
+            try:
+                info_text = self.lang_mgr.get_text("custom_headers_info")
+            except:
+                info_text = "Configure custom HTTP headers for repository requests.\n" \
+                            "One header per line, format: Header-Name: Header-Value\n" \
+                            "Example:\n" \
+                            "  Authorization: Bearer your-token-here\n" \
+                            "  Cookie: session=abc123"
+        else:
+            info_text = "Configure custom HTTP headers for repository requests.\n" \
+                        "One header per line, format: Header-Name: Header-Value\n" \
+                        "Example:\n" \
+                        "  Authorization: Bearer your-token-here\n" \
+                        "  Cookie: session=abc123"
+
+        info_label = QLabel(info_text)
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+
+        # 请求头编辑器
+        self.headers_editor = QTextEdit()
+
+        # 获取当前请求头并格式化显示
+        current_headers = self.repo_manager.client.headers
+        headers_text = ""
+        for key, value in current_headers.items():
+            headers_text += f"{key}: {value}\n"
+
+        self.headers_editor.setPlainText(headers_text.strip())
+        self.headers_editor.setFont(QFont("Courier", 10))
+        layout.addWidget(self.headers_editor)
+
+        # 按钮
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok |
+            QDialogButtonBox.StandardButton.Cancel |
+            QDialogButtonBox.StandardButton.RestoreDefaults
+        )
+        buttons.accepted.connect(lambda: self._save_custom_headers(dialog))
+        buttons.rejected.connect(dialog.reject)
+
+        # 添加恢复默认按钮的功能
+        restore_btn = buttons.button(QDialogButtonBox.StandardButton.RestoreDefaults)
+        restore_btn.clicked.connect(self._restore_default_headers)
+
+        layout.addWidget(buttons)
+        dialog.setLayout(layout)
+
+        dialog.exec()
+
+    def _save_custom_headers(self, dialog):
+        """保存自定义请求头"""
+        headers_text = self.headers_editor.toPlainText().strip()
+
+        # 解析请求头
+        new_headers = {}
+        for line in headers_text.split('\n'):
+            line = line.strip()
+            if not line or ':' not in line:
+                continue
+
+            key, value = line.split(':', 1)
+            key = key.strip()
+            value = value.strip()
+
+            if key and value:
+                new_headers[key] = value
+
+        # 更新 repo_manager 的请求头
+        if new_headers:
+            # 关闭旧客户端
+            if hasattr(self.repo_manager, 'client'):
+                self.repo_manager.client.close()
+
+            # 创建新客户端使用自定义请求头
+            import httpx
+            self.repo_manager.client = httpx.Client(
+                follow_redirects=True,
+                timeout=httpx.Timeout(30.0, connect=10.0),
+                headers=new_headers
+            )
+
+            # 保存自定义请求头到配置
+            self._save_custom_headers_to_config(new_headers)
+
+            dialog.accept()
+
+            # 提示用户
+            QMessageBox.information(self,
+                                    self.lang_mgr.get_text("success") if self.lang_mgr else "Success",
+                                    self.lang_mgr.get_text(
+                                        "headers_updated") if self.lang_mgr else "Headers updated successfully")
+
+    def _restore_default_headers(self):
+        """恢复默认请求头"""
+        # 获取默认的请求头
+        default_headers = self.repo_manager.jailbreak_config.config.get_http_headers()
+
+        # 格式化显示
+        headers_text = ""
+        for key, value in default_headers.items():
+            headers_text += f"{key}: {value}\n"
+
+        self.headers_editor.setPlainText(headers_text.strip())
+
+    def _save_custom_headers_to_config(self, headers):
+        """保存自定义请求头到配置文件"""
+        import json
+        config_file = self.repo_manager.app_dir / "custom_headers.json"
+
+        try:
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(headers, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[ERROR] Failed to save custom headers: {e}")
+
+    def _load_custom_headers_from_config(self):
+        """从配置文件加载自定义请求头"""
+        import json
+        config_file = self.repo_manager.app_dir / "custom_headers.json"
+
+        if config_file.exists():
+            try:
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"[ERROR] Failed to load custom headers: {e}")
+
+        return None
+
     def eventFilter(self, obj, event):
         """事件过滤器"""
         # 移除了标签栏的鼠标滚轮事件处理
         return super().eventFilter(obj, event)
-    
+
     def update_language(self, lang_mgr):
         """更新语言"""
         self.lang_mgr = lang_mgr
-        
+
         # 更新窗口标题
         self.setWindowTitle(lang_mgr.get_text("package_manager"))
-        
+
         # 更新详情组件的语言
         if hasattr(self, 'detail_widget') and self.detail_widget:
             self.detail_widget.update_language(lang_mgr)
-        
+
         # 更新按钮文本
         if hasattr(self, 'manage_sources_btn'):
             self.manage_sources_btn.setText(lang_mgr.get_text("manage_sources"))
-        
+
         # 更新搜索框占位符
         if hasattr(self, 'search_input'):
             self.search_input.setPlaceholderText(lang_mgr.get_text("search_placeholder"))
-        
+
         # 更新源菜单
         if hasattr(self, 'source_menu'):
             self.update_source_menu()
-        
+
         # 更新状态标签
         self.update_statistics()
-        
+
         # 重新加载以更新显示
         if hasattr(self, 'filtered_packages'):
             self.filter_packages()
-    
+
     def on_tab_changed(self, index):
         """标签页切换时"""
         if index < 0 or index >= len(self.categories):
             return
-        
+
         category = self.categories[index][1]
         list_widget = self.list_widgets[category]
         model = self.list_models.get(category)
-        
+
         # 如果该分类还没有显示包，则现在显示
         if model and model.rowCount() == 0 and hasattr(self, 'filtered_packages'):
             self.update_list(list_widget, category)

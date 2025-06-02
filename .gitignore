@@ -128,3 +128,4 @@ site/
 !icons/*.icns
 !icons/*.ico
 /CLAUDE.md
+/docs/development_notes/

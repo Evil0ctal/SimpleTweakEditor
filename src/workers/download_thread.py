@@ -19,6 +19,7 @@ from PyQt6.QtCore import QThread, pyqtSignal, QObject
 from typing import Optional, Tuple
 import os
 from pathlib import Path
+from ..utils.debug_logger import debug
 
 
 class DownloadWorker(QThread):
@@ -38,7 +39,7 @@ class DownloadWorker(QThread):
         self.lang_mgr = lang_mgr
         self._is_cancelled = False
         
-        print(f"[DEBUG] DownloadWorker initialized for {package.package}")
+        debug(f"DownloadWorker initialized for {package.package}")
     
     def run(self):
         """执行下载任务"""
@@ -82,7 +83,7 @@ class DownloadWorker(QThread):
     def cancel(self):
         """取消下载"""
         self._is_cancelled = True
-        print(f"[DEBUG] Download cancelled for {self.package.package}")
+        debug(f"Download cancelled for {self.package.package}")
 
 
 class BatchDownloadWorker(QThread):
@@ -105,7 +106,7 @@ class BatchDownloadWorker(QThread):
         self.lang_mgr = lang_mgr
         self._is_cancelled = False
         
-        print(f"[DEBUG] BatchDownloadWorker initialized with {len(download_tasks)} tasks")
+        debug(f"BatchDownloadWorker initialized with {len(download_tasks)} tasks")
     
     def run(self):
         """执行批量下载"""
@@ -150,12 +151,12 @@ class BatchDownloadWorker(QThread):
         
         # 发送完成信号
         self.all_finished.emit(success_count, failed_count)
-        print(f"[DEBUG] Batch download finished: {success_count} success, {failed_count} failed")
+        debug(f"Batch download finished: {success_count} success, {failed_count} failed")
     
     def cancel(self):
         """取消批量下载"""
         self._is_cancelled = True
-        print("[DEBUG] Batch download cancelled")
+        debug("Batch download cancelled")
 
 
 class RepoRefreshWorker(QThread):

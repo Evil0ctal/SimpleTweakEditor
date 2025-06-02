@@ -31,15 +31,22 @@ from src.utils.system_utils import (
 from src.workers.command_thread import UnpackThread, PackThread
 from .config import ConfigManager
 from .repo_manager import RepoManager
+from src.utils.debug_logger import set_config_manager, debug
 
 
 class TweakEditorApp:
     """Tweak编辑器应用程序核心类"""
+    
+    _instance = None  # 单例实例
 
     def __init__(self):
         # 初始化管理器
         self.config_mgr = ConfigManager()
         self.lang_mgr = LanguageManager()
+        
+        # 设置调试日志管理器
+        set_config_manager(self.config_mgr)
+        
         self.repo_mgr = RepoManager(str(self.config_mgr.config_dir))
 
         # 设置语言
@@ -54,16 +61,26 @@ class TweakEditorApp:
         self._operation_mutex = QMutex()
         self._is_operation_running = False
         self.current_operation_thread = None
+        
+        # 当前连接的设备
+        self.current_device = None
 
         # 创建主窗口
         self.main_window = MainWindow(self)
 
-        self.debug_print("Application core initialized")
+        debug("Application core initialized")
+        
+        # 设置单例实例
+        TweakEditorApp._instance = self
+    
+    @classmethod
+    def get_instance(cls):
+        """获取应用程序单例实例"""
+        return cls._instance
 
     def debug_print(self, message):
-        """调试输出"""
-        if self.debug_mode:
-            print(f"DEBUG: {message}")
+        """调试输出 - 保留以兼容旧代码"""
+        debug(message)
 
     def show(self):
         """显示主窗口"""

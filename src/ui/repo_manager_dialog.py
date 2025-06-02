@@ -21,8 +21,10 @@ from PyQt6.QtWidgets import (
     QLineEdit, QTextEdit, QFileDialog
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtGui import QColor
 from typing import Optional, List
 import os
+from ..utils.debug_logger import debug
 
 
 class AddRepoDialog(QDialog):
@@ -416,7 +418,23 @@ class RepoManagerDialog(QDialog):
             # 其他信息
             self.table.setItem(row, 1, QTableWidgetItem(repo.name))
             self.table.setItem(row, 2, QTableWidgetItem(repo.url))
-            self.table.setItem(row, 3, QTableWidgetItem(str(repo.packages_count)))
+            
+            # 包数量 - 如果是已知问题的仓库，显示特殊状态
+            packages_item = QTableWidgetItem()
+            if "apt.procurs.us" in repo.url:
+                packages_item.setText("Offline")
+                packages_item.setForeground(Qt.GlobalColor.red)
+                packages_item.setToolTip("Repository appears to be offline (404 errors)")
+            elif "repo.twickd.com" in repo.url and repo.packages_count == 0:
+                packages_item.setText("Auth Required")
+                packages_item.setForeground(QColor(255, 140, 0))  # Orange
+                packages_item.setToolTip("Repository may require authentication headers")
+            else:
+                packages_item.setText(str(repo.packages_count))
+                if repo.packages_count == 0:
+                    packages_item.setForeground(Qt.GlobalColor.darkGray)
+            self.table.setItem(row, 3, packages_item)
+            
             last_update_text = repo.last_updated or (self.lang_mgr.get_text("not_refreshed") if self.lang_mgr else "Not refreshed")
             self.table.setItem(row, 4, QTableWidgetItem(last_update_text))
             self.table.setItem(row, 5, QTableWidgetItem(repo.description or ""))
@@ -441,24 +459,24 @@ class RepoManagerDialog(QDialog):
     
     def on_double_click(self, row, col):
         """双击时触发 - 打开该软件源的包浏览器"""
-        print(f"[DEBUG] on_double_click called: row={row}, col={col}")
+        debug(f"on_double_click called: row={row}, col={col}")
         
         repo_url = self.get_selected_repo_url()
-        print(f"[DEBUG] Selected repo URL: {repo_url}")
+        debug(f"Selected repo URL: {repo_url}")
         if not repo_url:
-            print("[DEBUG] No repo URL selected, returning")
+            debug("No repo URL selected, returning")
             return
         
         repo = self.repo_manager.get_repository(repo_url)
-        print(f"[DEBUG] Repository object: {repo}")
+        debug(f"Repository object: {repo}")
         if not repo:
-            print("[DEBUG] Repository not found, returning")
+            debug("Repository not found, returning")
             return
         
         # 检查软件源是否启用
-        print(f"[DEBUG] Repository enabled: {repo.enabled}")
+        debug(f"Repository enabled: {repo.enabled}")
         if not repo.enabled:
-            print("[DEBUG] Repository is disabled, showing warning")
+            debug("Repository is disabled, showing warning")
             QMessageBox.warning(self, 
                               self.lang_mgr.get_text("warning") if self.lang_mgr else "Warning",
                               self.lang_mgr.get_text("repo_disabled") if self.lang_mgr else "Repository is disabled")
@@ -466,20 +484,20 @@ class RepoManagerDialog(QDialog):
         
         # 打开包管理器并筛选该软件源
         try:
-            print("[DEBUG] Checking for main window...")
+            debug("Checking for main window...")
             # 获取主窗口
             main_window = self.parent()
             if hasattr(main_window, 'open_package_manager') and hasattr(main_window, 'dialogs'):
-                print("[DEBUG] Using main window's package manager...")
+                debug("Using main window's package manager...")
                 # 使用主窗口的包管理器
                 main_window.open_package_manager()
                 
                 # 设置筛选
                 if main_window.dialogs['package_manager'] and hasattr(main_window.dialogs['package_manager'], 'set_source_filter'):
-                    print(f"[DEBUG] Setting source filter to: {repo.name}")
+                    debug(f"Setting source filter to: {repo.name}")
                     main_window.dialogs['package_manager'].set_source_filter(repo.name)
             else:
-                print("[DEBUG] Fallback to creating new dialog...")
+                debug("Fallback to creating new dialog...")
                 # 兼容旧的方式
                 from src.ui.package_manager_widget import PackageManagerWidget
                 
@@ -490,7 +508,7 @@ class RepoManagerDialog(QDialog):
                 
                 dialog.exec()
         except Exception as e:
-            print(f"[DEBUG] ERROR in on_double_click: {type(e).__name__}: {str(e)}")
+            debug(f"ERROR in on_double_click: {type(e).__name__}: {str(e)}")
             import traceback
             traceback.print_exc()
             QMessageBox.critical(self, 
@@ -690,7 +708,7 @@ class RepoManagerDialog(QDialog):
     def toggle_repo(self, repo_url: str, enabled: bool):
         """切换软件源启用状态"""
         self.repo_manager.update_repository(repo_url, enabled=enabled)
-        print(f"[DEBUG] Repository {repo_url} enabled: {enabled}")
+        debug(f"Repository {repo_url} enabled: {enabled}")
     
     def refresh_repos(self):
         """刷新选中的软件源"""

@@ -99,6 +99,7 @@ class MainWindow(QMainWindow):
         self.create_package_manager_tab()
         self.create_repo_manager_tab()
         self.create_command_tools_tab()
+        self.create_device_tab()
         
         layout.addWidget(self.tab_widget)
 
@@ -171,6 +172,28 @@ class MainWindow(QMainWindow):
         # 使用新的交互式终端
         self.terminal_widget = InteractiveTerminal(self.lang_mgr)
         self.tab_widget.addTab(self.terminal_widget, self.lang_mgr.get_text("command_tools"))
+    
+    def create_device_tab(self):
+        """创建设备选项卡"""
+        try:
+            from src.ui.device_panel import DevicePanel
+            
+            # 创建设备面板
+            self.device_panel = DevicePanel(self.lang_mgr)
+            
+            # 连接信号
+            self.device_panel.device_connected.connect(self.on_device_connected)
+            self.device_panel.device_disconnected.connect(self.on_device_disconnected)
+            
+            # 添加到选项卡
+            self.tab_widget.addTab(self.device_panel, self.lang_mgr.get_text("ios_device"))
+            
+        except ImportError as e:
+            print(f"[WARNING] Could not import device panel: {e}")
+            # 创建占位符
+            placeholder = QLabel("iOS Device features not available.\nInstall pymobiledevice3 to enable.")
+            placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.tab_widget.addTab(placeholder, self.lang_mgr.get_text("ios_device"))
 
     def create_info_section(self, layout):
         """创建信息区域"""
@@ -455,6 +478,8 @@ class MainWindow(QMainWindow):
         debug_action.setChecked(self.app_core.debug_mode)
         debug_action.triggered.connect(self.app_core.toggle_debug_mode)
         settings_menu.addAction(debug_action)
+
+        settings_menu.addSeparator()
 
         # 语言切换子菜单
         self.create_language_menu(settings_menu)
@@ -1305,6 +1330,11 @@ class MainWindow(QMainWindow):
         # 停止应用核心的操作
         if hasattr(self, 'app_core') and self.app_core:
             self.app_core.stop_current_operation()
+        
+        # 停止设备面板
+        if hasattr(self, 'device_panel') and self.device_panel:
+            # 触发设备面板的关闭事件以清理线程
+            self.device_panel.close()
 
         # 保存窗口状态
         self.save_window_state()
@@ -1461,3 +1491,18 @@ class MainWindow(QMainWindow):
         if self.dialogs['package_manager'] and hasattr(self.dialogs['package_manager'], 'update_source_menu'):
             self.dialogs['package_manager'].update_source_menu()
             self.dialogs['package_manager'].load_all_packages()
+    
+        
+        # 如果包管理器已打开，刷新显示
+        if self.dialogs['package_manager'] and self.dialogs['package_manager'].isVisible():
+            self.dialogs['package_manager'].load_all_packages()
+    
+    def on_device_connected(self, device):
+        """设备连接时的处理"""
+        self.log(f"iOS device connected: {device.name} ({device.model})")
+        self.status_bar.showMessage(f"Device connected: {device.name}", 5000)
+    
+    def on_device_disconnected(self):
+        """设备断开时的处理"""
+        self.log("iOS device disconnected")
+        self.status_bar.showMessage("Device disconnected", 5000)

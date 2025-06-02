@@ -16,6 +16,11 @@ pathlib2; python_version < "3.4"
 # For improved JSON handling
 ujson; platform_system != "Windows"
 
+# For iOS device interaction (optional but recommended)
+pymobiledevice3>=1.30.0
+# IMPORTANT: pymobiledevice3 requires specific construct version
+construct==2.10.68  # DO NOT UPGRADE! Version 2.10.70+ causes "stream.tell() failed" error
+
 # Development dependencies (optional)
 # pytest>=6.0.0
 # pytest-qt>=4.0.0

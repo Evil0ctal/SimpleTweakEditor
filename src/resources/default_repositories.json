@@ -21,11 +21,6 @@
       "description": "Repository for popular iOS tweaks (470+ packages)"
     },
     {
-      "name": "Twickd",
-      "url": "https://repo.twickd.com/",
-      "description": "Device customization platform with 500+ themes and tweaks"
-    },
-    {
       "name": "Zebra",
       "url": "https://getzbra.com/repo/",
       "description": "Repository for Zebra package manager"
@@ -49,6 +44,11 @@
       "name": "Spark Dev",
       "url": "https://sparkdev.me/",
       "description": "Modern tweaks and enhancements for iOS devices"
+    },
+    {
+      "name": "ElleKit",
+      "url": "https://ellekit.space/",
+      "description": "Modern hooking library and rootless jailbreak packages"
     }
   ]
 }
