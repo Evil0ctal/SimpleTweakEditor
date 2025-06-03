@@ -32,3 +32,8 @@ construct==2.10.68  # DO NOT UPGRADE! Version 2.10.70+ causes "stream.tell() fai
 # Linux: sudo apt-get install dpkg
 # macOS: brew install dpkg
 # Windows: Use WSL or install dpkg through other means
+
+# For SSH Terminal functionality
+paramiko>=3.0.0  # SSH client library
+cryptography>=41.0.0  # For secure credential storage
+pyperclip>=1.8.0  # For clipboard operations in terminal

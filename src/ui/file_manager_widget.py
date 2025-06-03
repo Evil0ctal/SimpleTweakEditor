@@ -90,8 +90,8 @@ class FileTransferThread(QThread):
     def __init__(self, filesystem, operation, source, destination=None):
         super().__init__()
         self.filesystem = filesystem
-        self.operation = operation  # 'download', 'upload', 'delete'
-        self.source = source
+        self.operation = operation  # 'download', 'upload', 'delete', 'delete_multiple'
+        self.source = source  # For delete_multiple, this is a list of paths
         self.destination = destination
         self._is_cancelled = False
     
@@ -104,6 +104,8 @@ class FileTransferThread(QThread):
                 self._upload_file()
             elif self.operation == 'delete':
                 self._delete_file()
+            elif self.operation == 'delete_multiple':
+                self._delete_multiple_files()
             else:
                 self.finished.emit(False, f"Unknown operation: {self.operation}")
         except Exception as e:
@@ -181,6 +183,43 @@ class FileTransferThread(QThread):
             self.finished.emit(True, "File deleted successfully")
         except Exception as e:
             self.finished.emit(False, f"Delete failed: {str(e)}")
+    
+    def _delete_multiple_files(self):
+        """删除多个文件"""
+        try:
+            total_files = len(self.source)
+            deleted_count = 0
+            failed_files = []
+            
+            for i, path in enumerate(self.source):
+                if self._is_cancelled:
+                    self.finished.emit(False, f"Cancelled after deleting {deleted_count} of {total_files} files")
+                    return
+                
+                filename = os.path.basename(path)
+                progress = int((i / total_files) * 100)
+                self.progress.emit(progress, f"Deleting {filename}... ({i+1}/{total_files})")
+                
+                try:
+                    self.filesystem.delete(path)
+                    deleted_count += 1
+                except Exception as e:
+                    failed_files.append((filename, str(e)))
+                    debug(f"Failed to delete {filename}: {e}")
+            
+            self.progress.emit(100, "Delete operation complete")
+            
+            if failed_files:
+                error_msg = f"Deleted {deleted_count} files successfully.\nFailed to delete {len(failed_files)} files:"
+                for filename, error in failed_files[:5]:  # Show first 5 errors
+                    error_msg += f"\n- {filename}: {error}"
+                if len(failed_files) > 5:
+                    error_msg += f"\n... and {len(failed_files) - 5} more"
+                self.finished.emit(False, error_msg)
+            else:
+                self.finished.emit(True, f"Successfully deleted {deleted_count} files")
+        except Exception as e:
+            self.finished.emit(False, f"Delete operation failed: {str(e)}")
     
     def cancel(self):
         """取消操作"""
@@ -965,6 +1004,15 @@ class FileManagerWidget(QDialog):
     
     def download_file(self, path: str):
         """下载文件到本地"""
+        # 检查是否有正在运行的传输
+        if self.transfer_thread and self.transfer_thread.isRunning():
+            QMessageBox.warning(
+                self,
+                self.lang_mgr.get_text("warning") or "Warning",
+                self.lang_mgr.get_text("transfer_in_progress") or "A file transfer is already in progress. Please wait for it to complete."
+            )
+            return
+        
         filename = os.path.basename(path)
         
         # 获取默认下载目录
@@ -1002,6 +1050,15 @@ class FileManagerWidget(QDialog):
     
     def upload_file(self):
         """上传文件到设备"""
+        # 检查是否有正在运行的传输
+        if self.transfer_thread and self.transfer_thread.isRunning():
+            QMessageBox.warning(
+                self,
+                self.lang_mgr.get_text("warning") or "Warning",
+                self.lang_mgr.get_text("transfer_in_progress") or "A file transfer is already in progress. Please wait for it to complete."
+            )
+            return
+        
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             self.lang_mgr.get_text("select_file") or "Select File"
@@ -1048,6 +1105,15 @@ class FileManagerWidget(QDialog):
     
     def delete_file(self, path: str):
         """删除文件"""
+        # 检查是否有正在运行的传输
+        if self.transfer_thread and self.transfer_thread.isRunning():
+            QMessageBox.warning(
+                self,
+                self.lang_mgr.get_text("warning") or "Warning",
+                self.lang_mgr.get_text("transfer_in_progress") or "A file transfer is already in progress. Please wait for it to complete."
+            )
+            return
+        
         filename = os.path.basename(path)
         reply = QMessageBox.question(
             self,
@@ -1377,6 +1443,15 @@ class FileManagerWidget(QDialog):
     
     def delete_selected_items(self):
         """删除选中的项目"""
+        # 检查是否有正在运行的传输
+        if self.transfer_thread and self.transfer_thread.isRunning():
+            QMessageBox.warning(
+                self,
+                self.lang_mgr.get_text("warning") or "Warning",
+                self.lang_mgr.get_text("transfer_in_progress") or "A file transfer is already in progress. Please wait for it to complete."
+            )
+            return
+        
         selected_items = self.file_tree.selectedItems()
         if not selected_items:
             return
@@ -1405,8 +1480,25 @@ class FileManagerWidget(QDialog):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
-            for file_info in items_to_delete:
-                self.delete_file(file_info.path)
+            if len(items_to_delete) == 1:
+                # 单个文件，使用原有的 delete_file 方法
+                self.delete_file(items_to_delete[0].path)
+            else:
+                # 多个文件，使用批量删除
+                paths = [file_info.path for file_info in items_to_delete]
+                
+                # 创建并启动传输线程
+                self.transfer_thread = FileTransferThread(
+                    self.filesystem,
+                    'delete_multiple',
+                    paths  # 传递路径列表
+                )
+                
+                self.transfer_thread.progress.connect(self.update_progress)
+                self.transfer_thread.finished.connect(self.on_transfer_finished)
+                
+                self.progress_bar.setVisible(True)
+                self.transfer_thread.start()
     
     def download_selected_items(self):
         """下载选中的项目"""
@@ -1798,6 +1890,15 @@ class FileManagerWidget(QDialog):
     
     def _download_and_open(self, path: str):
         """下载并打开文件"""
+        # 检查是否有正在运行的传输
+        if self.transfer_thread and self.transfer_thread.isRunning():
+            QMessageBox.warning(
+                self,
+                self.lang_mgr.get_text("warning") or "Warning",
+                self.lang_mgr.get_text("transfer_in_progress") or "A file transfer is already in progress. Please wait for it to complete."
+            )
+            return
+        
         import tempfile
         import subprocess
         import platform
@@ -1837,12 +1938,39 @@ class FileManagerWidget(QDialog):
     
     def dropEvent(self, event: QDropEvent):
         """放下事件"""
+        # 检查是否有正在运行的传输
+        if self.transfer_thread and self.transfer_thread.isRunning():
+            QMessageBox.warning(
+                self,
+                self.lang_mgr.get_text("warning") or "Warning",
+                self.lang_mgr.get_text("transfer_in_progress") or "A file transfer is already in progress. Please wait for it to complete."
+            )
+            return
+        
         for url in event.mimeData().urls():
             file_path = url.toLocalFile()
             if file_path and os.path.exists(file_path):
                 # 上传文件
                 filename = os.path.basename(file_path)
                 dest_path = os.path.join(self.current_path, filename)
+                
+                # 检查文件是否已存在
+                for i in range(self.file_tree.topLevelItemCount()):
+                    item = self.file_tree.topLevelItem(i)
+                    if item.text(0) == filename:
+                        reply = QMessageBox.question(
+                            self,
+                            self.lang_mgr.get_text("confirm") or "Confirm",
+                            f"{filename} already exists. Overwrite?"
+                        )
+                        if reply != QMessageBox.StandardButton.Yes:
+                            return
+                        break
+                
+                # 显示上传开始提示
+                self.status_label.setText(
+                    self.lang_mgr.format_text("uploading_file", filename) or f"Uploading {filename}..."
+                )
                 
                 self.transfer_thread = FileTransferThread(
                     self.filesystem,
@@ -1934,3 +2062,23 @@ class FileManagerWidget(QDialog):
                 self.lang_mgr.get_text("error") or "Error",
                 self.lang_mgr.get_text("save_failed") or f"Failed to save file: {str(e)}"
             )
+    
+    def closeEvent(self, event):
+        """窗口关闭事件"""
+        # 停止并等待传输线程
+        if self.transfer_thread and self.transfer_thread.isRunning():
+            self.transfer_thread.cancel()
+            self.transfer_thread.wait(2000)  # 等待最多2秒
+            if self.transfer_thread.isRunning():
+                self.transfer_thread.terminate()  # 强制终止
+                self.transfer_thread.wait()
+        
+        # 停止搜索线程
+        if hasattr(self, 'search_thread') and self.search_thread and self.search_thread.isRunning():
+            self.search_thread.cancel()
+            self.search_thread.wait(1000)
+            if self.search_thread.isRunning():
+                self.search_thread.terminate()
+                self.search_thread.wait()
+        
+        event.accept()

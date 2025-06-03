@@ -100,6 +100,7 @@ class MainWindow(QMainWindow):
         self.create_repo_manager_tab()
         self.create_command_tools_tab()
         self.create_device_tab()
+        self.create_ssh_terminal_tab()
         
         layout.addWidget(self.tab_widget)
 
@@ -194,6 +195,24 @@ class MainWindow(QMainWindow):
             placeholder = QLabel("iOS Device features not available.\nInstall pymobiledevice3 to enable.")
             placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.tab_widget.addTab(placeholder, self.lang_mgr.get_text("ios_device"))
+    
+    def create_ssh_terminal_tab(self):
+        """创建SSH终端选项卡"""
+        try:
+            from src.modules.ssh_terminal import SSHTerminalPanel
+            
+            # 创建SSH终端面板
+            self.ssh_terminal = SSHTerminalPanel(self)
+            
+            # 添加到选项卡
+            self.tab_widget.addTab(self.ssh_terminal, self.lang_mgr.get_text("ssh_terminal"))
+            
+        except ImportError as e:
+            print(f"[WARNING] Could not import SSH terminal panel: {e}")
+            # 创建占位符
+            placeholder = QLabel(self.lang_mgr.get_text("ssh_terminal_unavailable"))
+            placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.tab_widget.addTab(placeholder, self.lang_mgr.get_text("ssh_terminal"))
 
     def create_info_section(self, layout):
         """创建信息区域"""
@@ -486,6 +505,13 @@ class MainWindow(QMainWindow):
         
         # 主题切换子菜单
         self.create_theme_menu(settings_menu)
+        
+        settings_menu.addSeparator()
+        
+        # SSH凭据管理器
+        credential_manager_action = QAction(self.lang_mgr.get_text("credential_manager"), self)
+        credential_manager_action.triggered.connect(self.open_credential_manager)
+        settings_menu.addAction(credential_manager_action)
 
     def create_language_menu(self, parent_menu):
         """创建语言菜单"""
@@ -1496,6 +1522,40 @@ class MainWindow(QMainWindow):
         # 如果包管理器已打开，刷新显示
         if self.dialogs['package_manager'] and self.dialogs['package_manager'].isVisible():
             self.dialogs['package_manager'].load_all_packages()
+    
+    def open_credential_manager(self):
+        """打开SSH凭据管理器"""
+        try:
+            # 检查是否已有实例
+            if hasattr(self, 'credential_manager_dialog') and self.credential_manager_dialog:
+                try:
+                    if self.credential_manager_dialog.isVisible():
+                        # 如果窗口已存在且可见，激活它
+                        self.credential_manager_dialog.raise_()
+                        self.credential_manager_dialog.activateWindow()
+                        return
+                except RuntimeError:
+                    # 窗口已被销毁，清理引用
+                    self.credential_manager_dialog = None
+            
+            from src.modules.ssh_terminal.credential_manager_dialog import CredentialManagerDialog
+            
+            # 创建并显示凭据管理器
+            self.credential_manager_dialog = CredentialManagerDialog(self)
+            
+            # 连接关闭信号，清理引用
+            self.credential_manager_dialog.destroyed.connect(
+                lambda: setattr(self, 'credential_manager_dialog', None)
+            )
+            
+            self.credential_manager_dialog.show()
+            
+        except ImportError as e:
+            self.log(f"Failed to import Credential Manager: {str(e)}", "error")
+            QMessageBox.critical(self, self.lang_mgr.get_text("error"), str(e))
+        except Exception as e:
+            self.log(f"Error opening Credential Manager: {str(e)}", "error")
+            QMessageBox.critical(self, self.lang_mgr.get_text("error"), str(e))
     
     def on_device_connected(self, device):
         """设备连接时的处理"""
