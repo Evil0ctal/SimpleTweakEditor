@@ -256,7 +256,28 @@ A: Install Python dependencies: `pip3 install PyQt6 Pillow`
 
 ## 📝 Changelog
 
-### 🆕 v1.0.3 (2025-06-01) - Plist Editor & Project Optimization
+### 🆕 v1.0.4 (2025-06-07) - iOS Device Support & SSH Terminal
+**Major Update: Complete iOS Device Support and Professional SSH Terminal!**
+- 📱 **iOS Device File Management**
+  - AFC protocol for direct iOS filesystem access
+  - Real-time device detection and connection management
+  - File upload, download, delete and rename operations
+  - Support for non-jailbroken, rootless and rootful jailbreak modes
+- 🔌 **Professional SSH Terminal**
+  - Auto-scan USB and Wi-Fi connected devices
+  - Secure credential management using system keychain
+  - Multi-session support with tabbed interface
+  - Preset common iOS management commands
+- 🎨 **Interface Enhancements**
+  - New dedicated iOS device management panel
+  - Theme-aware SSH terminal interface
+  - Seamlessly integrated with app theme system
+- 🔧 **Technical Improvements**
+  - Modular architecture with new SSH and device modules
+  - Graceful degradation with optional dependencies
+  - Enhanced security protection
+
+### v1.0.3 (2025-06-01) - Plist Editor & Project Optimization
 **Major Update: New Plist Editor and Project Structure Optimization!**
 - 📝 **Full-Featured Plist Editor** 
   - Dual mode: tree view and text editing

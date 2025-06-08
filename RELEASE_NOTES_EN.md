@@ -6,7 +6,7 @@ English | [中文](RELEASE_NOTES.md)
 
 </div>
 
-## 🚀 v1.0.4 (2025-01-07)
+## 🚀 v1.0.4 (2025-06-07)
 
 ### iOS Device Support & SSH Terminal
 
