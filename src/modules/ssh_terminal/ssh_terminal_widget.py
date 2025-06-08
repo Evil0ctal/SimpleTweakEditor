@@ -13,6 +13,7 @@ Provides complete terminal experience including command history, auto-completion
 """
 
 import logging
+from typing import List
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, 
     QLineEdit, QLabel, QPushButton, QSplitter
@@ -149,6 +150,9 @@ class SSHTerminalWidget(QWidget):
         # 创建终端模拟器
         self.terminal = TerminalEmulator(self.ssh_client)
         
+        # 获取真实的设备名称
+        self._update_device_name()
+        
         # 更新提示符
         self._update_prompt()
         
@@ -216,6 +220,24 @@ class SSHTerminalWidget(QWidget):
             self.prompt_label.setText(prompt)
         else:
             self.prompt_label.setText("$ ")
+    
+    def _update_device_name(self):
+        """从设备获取真实的设备名称"""
+        if not self.ssh_client.is_connected:
+            return
+            
+        # 尝试从uname获取设备名称
+        stdout, _ = self.ssh_client.execute_command("uname -n")
+        if stdout and stdout.strip():
+            hostname = stdout.strip()
+            # 某些设备可能返回类似 "Evil0ctal-iPhone-SE.local" 的格式
+            if hostname.endswith('.local'):
+                hostname = hostname[:-6]  # 移除.local后缀
+            
+            # 更新设备名称
+            if hostname and hostname != 'iPhone':  # 如果不是通用名称
+                self.device_name = hostname
+                logger.info(f"Updated device name to: {self.device_name}")
             
     def _show_welcome_message(self):
         """显示欢迎信息"""
@@ -254,22 +276,96 @@ class SSHTerminalWidget(QWidget):
         
     def keyPressEvent(self, event: QKeyEvent):
         """处理键盘事件"""
-        if not self.terminal:
-            return super().keyPressEvent(event)
-            
-        # 处理历史命令
-        if event.key() == Qt.Key.Key_Up:
-            history_cmd = self.terminal.get_history_prev()
-            if history_cmd is not None:
-                self.input_line.setText(history_cmd)
-                self.input_line.setCursorPosition(len(history_cmd))
-        elif event.key() == Qt.Key.Key_Down:
-            history_cmd = self.terminal.get_history_next()
-            if history_cmd is not None:
-                self.input_line.setText(history_cmd)
-                self.input_line.setCursorPosition(len(history_cmd))
+        # 确保焦点在输入框时才处理特殊键
+        if self.input_line.hasFocus():
+            if not self.terminal:
+                return super().keyPressEvent(event)
+                
+            # 处理Tab键自动补全
+            if event.key() == Qt.Key.Key_Tab:
+                self._handle_tab_completion()
+                return
+                
+            # 处理历史命令
+            if event.key() == Qt.Key.Key_Up:
+                history_cmd = self.terminal.get_history_prev()
+                if history_cmd is not None:
+                    self.input_line.setText(history_cmd)
+                    self.input_line.setCursorPosition(len(history_cmd))
+                return
+            elif event.key() == Qt.Key.Key_Down:
+                history_cmd = self.terminal.get_history_next()
+                if history_cmd is not None:
+                    self.input_line.setText(history_cmd)
+                    self.input_line.setCursorPosition(len(history_cmd))
+                return
+        
+        super().keyPressEvent(event)
+    
+    def _handle_tab_completion(self):
+        """处理Tab补全"""
+        current_text = self.input_line.text()
+        if not current_text:
+            return
+        
+        # 获取补全建议
+        completions = self.terminal.get_completions(current_text)
+        
+        if not completions:
+            return
+        
+        if len(completions) == 1:
+            # 只有一个补全，直接应用
+            self.input_line.setText(completions[0])
+            self.input_line.setCursorPosition(len(completions[0]))
         else:
-            super().keyPressEvent(event)
+            # 多个补全，显示选项
+            self._show_completions(completions)
+            
+            # 找出公共前缀
+            common_prefix = self._find_common_prefix(completions)
+            if common_prefix and len(common_prefix) > len(current_text):
+                self.input_line.setText(common_prefix)
+                self.input_line.setCursorPosition(len(common_prefix))
+    
+    def _show_completions(self, completions: List[str]):
+        """显示补全选项"""
+        # 在输出区域显示补全选项
+        self._append_output("\n", color="#ffffff")
+        
+        # 格式化显示
+        max_width = max(len(c) for c in completions) + 2
+        columns = max(1, 80 // max_width)  # 假设终端宽度为80
+        
+        for i in range(0, len(completions), columns):
+            row = completions[i:i+columns]
+            row_text = "".join(c.ljust(max_width) for c in row)
+            self._append_output(row_text + "\n", color="#98c379")
+        
+        # 重新显示提示符和当前输入
+        prompt = self.prompt_label.text()
+        current = self.input_line.text()
+        self._append_output(f"{prompt}{current}", color="#569cd6")
+    
+    def _find_common_prefix(self, strings: List[str]) -> str:
+        """找出字符串列表的公共前缀"""
+        if not strings:
+            return ""
+        
+        # 使用第一个字符串作为基准
+        prefix = strings[0]
+        
+        for s in strings[1:]:
+            # 逐字符比较，找出公共前缀
+            i = 0
+            while i < len(prefix) and i < len(s) and prefix[i] == s[i]:
+                i += 1
+            prefix = prefix[:i]
+            
+            if not prefix:
+                break
+        
+        return prefix
             
     def execute_command(self, command: str):
         """执行命令（供外部调用）"""

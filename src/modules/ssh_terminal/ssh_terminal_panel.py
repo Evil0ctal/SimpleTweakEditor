@@ -659,31 +659,57 @@ class SSHTerminalPanel(QWidget):
         
     def add_device_to_list(self, device_info: dict):
         """添加设备到列表"""
-        # 检查是否已存在（基于设备名称去重）
+        # 检查是否已存在（基于设备标识符去重）
         root = self.device_tree.invisibleRootItem()
         for i in range(root.childCount()):
             item = root.child(i)
             existing_info = item.data(1, Qt.ItemDataRole.UserRole)
-            if existing_info and existing_info.get('name') == device_info['name']:
-                # 更新现有设备的identifier（使用最新的）
-                logger.debug(f"更新设备 {device_info['name']} 的标识符: {device_info['identifier']}")
-                item.setData(0, Qt.ItemDataRole.UserRole, device_info['identifier'])
-                item.setData(1, Qt.ItemDataRole.UserRole, device_info)
+            if existing_info and existing_info.get('identifier') == device_info['identifier']:
+                # 更新现有设备信息
+                logger.debug(f"更新设备 {device_info['name']} 的信息")
+                self._update_device_item(item, device_info)
                 return
                 
         # 添加新设备
         item = QTreeWidgetItem()
-        item.setText(0, device_info['name'])
-        item.setData(0, Qt.ItemDataRole.UserRole, device_info['identifier'])
-        item.setData(1, Qt.ItemDataRole.UserRole, device_info)
-        
-        # 设置图标
-        item.setIcon(0, self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon))
+        self._update_device_item(item, device_info)
         
         # 设置初始状态
         self.update_device_status(item, "disconnected")
         
         self.device_tree.addTopLevelItem(item)
+    
+    def _update_device_item(self, item: QTreeWidgetItem, device_info: dict):
+        """更新设备项的显示"""
+        # 使用真实名称（如果有）或默认名称
+        display_name = device_info.get('real_name', device_info['name'])
+        connection_type = device_info.get('connection_type', 'usb')
+        
+        # 添加连接类型标识
+        if connection_type == 'wifi':
+            # WiFi设备显示IP地址
+            host = device_info.get('host', '')
+            if host:
+                display_text = f"{display_name} ({host})"
+            else:
+                display_text = display_name
+            type_icon = "📶"  # WiFi图标
+        else:
+            # USB设备 - 不再添加(USB)后缀，因为有图标了
+            display_text = display_name
+            type_icon = "🔌"  # USB图标
+        
+        # 设置显示文本
+        item.setText(0, f"{type_icon} {display_text}")
+        item.setData(0, Qt.ItemDataRole.UserRole, device_info['identifier'])
+        item.setData(1, Qt.ItemDataRole.UserRole, device_info)
+        
+        # 设置图标
+        if connection_type == 'wifi':
+            # 可以考虑使用不同的图标
+            item.setIcon(0, self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon))
+        else:
+            item.setIcon(0, self.style().standardIcon(QStyle.StandardPixmap.SP_DriveHDIcon))
         
     def update_device_status(self, item: QTreeWidgetItem, status: str):
         """更新设备状态"""
@@ -716,15 +742,79 @@ class SSHTerminalPanel(QWidget):
         
     def add_wifi_device(self):
         """添加Wi-Fi设备"""
-        # TODO: 实现Wi-Fi设备添加对话框
-        device_info = {
-            'identifier': 'wifi_device',
-            'name': 'Wi-Fi Device',
-            'connection_type': 'wifi',
-            'host': '192.168.1.100',
-            'port': 22
-        }
-        self.add_device_to_list(device_info)
+        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QSpinBox, QDialogButtonBox, QFormLayout
+        
+        # 创建对话框
+        dialog = QDialog(self)
+        dialog.setWindowTitle(self.get_text('add_wifi_device'))
+        dialog.setModal(True)
+        dialog.setMinimumWidth(350)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # 表单布局
+        form_layout = QFormLayout()
+        
+        # 设备名称
+        name_edit = QLineEdit()
+        name_edit.setText("iOS Device (WiFi)")
+        form_layout.addRow(self.get_text('device_name'), name_edit)
+        
+        # IP地址
+        ip_edit = QLineEdit()
+        ip_edit.setText("192.168.1.")
+        ip_edit.setPlaceholderText("192.168.1.100")
+        form_layout.addRow(self.get_text('ip_address'), ip_edit)
+        
+        # 端口
+        port_spin = QSpinBox()
+        port_spin.setRange(1, 65535)
+        port_spin.setValue(22)
+        form_layout.addRow(self.get_text('port'), port_spin)
+        
+        layout.addLayout(form_layout)
+        
+        # 提示信息
+        hint_label = QLabel(self.get_text('wifi_hint', 
+            'Make sure SSH is enabled on your device and both devices are on the same network.'))
+        hint_label.setWordWrap(True)
+        hint_label.setStyleSheet("color: palette(mid); padding: 10px;")
+        layout.addWidget(hint_label)
+        
+        # 按钮
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        
+        # 显示对话框
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # 获取输入的值
+            device_name = name_edit.text().strip()
+            ip_address = ip_edit.text().strip()
+            port = port_spin.value()
+            
+            if not device_name or not ip_address:
+                QMessageBox.warning(self, self.get_text('error'), 
+                    self.get_text('fill_all_fields', 'Please fill in all fields'))
+                return
+            
+            # 创建设备信息
+            device_info = {
+                'identifier': f'wifi_{ip_address.replace(".", "_")}_{port}',
+                'name': device_name,
+                'connection_type': 'wifi',
+                'host': ip_address,
+                'port': port
+            }
+            
+            # 添加到设备列表
+            self.add_device_to_list(device_info)
+            self.status_label.setText(
+                self.get_text('wifi_device_added', 'WiFi device added: {0}').format(device_name)
+            )
         
     def on_device_double_clicked(self, item: QTreeWidgetItem, column: int):
         """设备双击事件"""
@@ -758,7 +848,7 @@ class SSHTerminalPanel(QWidget):
         
         # 连接信号
         terminal.connection_established.connect(
-            lambda name: self.on_connection_established(device_info, terminal)
+            lambda name: self.on_connection_established(device_info, terminal, name)
         )
         terminal.connection_lost.connect(
             lambda: self.on_connection_lost(device_info)
@@ -803,19 +893,44 @@ class SSHTerminalPanel(QWidget):
                     device_name=device_info['name']
                 )
             
-    def on_connection_established(self, device_info: dict, terminal: SSHTerminalWidget):
+    def on_connection_established(self, device_info: dict, terminal: SSHTerminalWidget, real_device_name: str = None):
         """连接建立"""
-        logger.info(f"Connection established to {device_info['name']}")
+        # 如果有真实设备名称，更新设备信息
+        if real_device_name and real_device_name != device_info['name']:
+            device_info['real_name'] = real_device_name
+            logger.info(f"Connection established to {real_device_name} (was: {device_info['name']})")
+            display_name = real_device_name
+        else:
+            display_name = device_info['name']
+            logger.info(f"Connection established to {display_name}")
         
-        # 更新设备状态
+        # 更新设备状态和显示名称
         root = self.device_tree.invisibleRootItem()
         for i in range(root.childCount()):
             item = root.child(i)
             if item.data(0, Qt.ItemDataRole.UserRole) == device_info['identifier']:
                 self.update_device_status(item, "connected")
+                # 更新设备显示名称
+                if real_device_name:
+                    updated_info = device_info.copy()
+                    updated_info['name'] = real_device_name
+                    self._update_device_item(item, updated_info)
+                    # 更新标签页名称
+                    for j in range(self.session_tabs.count()):
+                        if self.session_tabs.widget(j) == terminal:
+                            self.session_tabs.setTabText(j, real_device_name)
+                            break
                 break
-                
-        self.status_label.setText(self.get_text('connected_to', device_info['name']))
+        
+        # 构建状态消息
+        connection_type = device_info.get('connection_type', 'usb')
+        if connection_type == 'wifi':
+            host = device_info.get('host', '')
+            status_msg = self.get_text('connected_to', f"{display_name} (WiFi: {host})")
+        else:
+            status_msg = self.get_text('connected_to', f"{display_name} (USB)")
+            
+        self.status_label.setText(status_msg)
         
     def on_connection_lost(self, device_info: dict):
         """连接断开"""

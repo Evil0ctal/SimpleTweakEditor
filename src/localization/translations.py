@@ -243,7 +243,7 @@ class Translations:
         "feature_2": "2. Interactive Terminal: Real PTY-based terminal with multi-tab support",
         "feature_3": "3. Smart Editor: Control file editor with syntax validation",
         "feature_4": "4. Multi-theme Support: Dark/light modes with dynamic layout",
-        "feature_5": "5. Drag & Drop: Simple file operations with visual feedback",
+        "feature_5": "5. iOS Device Support: AFC protocol for file management and SSH terminal",
         "feature_6": "6. Security: Path validation and file size limits",
         "usage_title": "=== Usage Instructions ===",
         "usage_unpack_title": "Unpack .deb files:",
@@ -260,7 +260,7 @@ class Translations:
 
         # About dialog
         "about_title": "SimpleTweakEditor",
-        "about_version": "Version: {version}",
+        "about_version": "Version 1.0.4",
         "about_description": "Professional iOS .deb package editor with modern GUI and advanced features.",
         
         # Repository Manager
@@ -966,7 +966,7 @@ class Translations:
         "feature_2": "2. 交互式终端：真正的PTY终端，支持多标签页",
         "feature_3": "3. 智能编辑器：Control文件编辑器和语法验证",
         "feature_4": "4. 多主题支持：暗色/亮色模式和动态布局",
-        "feature_5": "5. 拖放操作：简单的文件操作和视觉反馈",
+        "feature_5": "5. iOS设备支持：AFC协议文件管理和SSH终端",
         "feature_6": "6. 安全保护：路径验证和文件大小限制",
         "usage_title": "=== 使用方法 ===",
         "usage_unpack_title": "解包.deb文件:",
@@ -983,7 +983,7 @@ class Translations:
 
         # 关于对话框
         "about_title": "SimpleTweakEditor",
-        "about_version": "版本: {version}",
+        "about_version": "版本 1.0.4",
         "about_description": "专业iOS .deb软件包编辑器，具有现代GUI和高级功能。",
         
         # 软件源管理

@@ -6,6 +6,88 @@ English | [中文](RELEASE_NOTES.md)
 
 </div>
 
+## 🚀 v1.0.4 (2025-01-07)
+
+### iOS Device Support & SSH Terminal
+
+This version introduces major new features including complete iOS device support and a professional SSH terminal, making SimpleTweakEditor a more comprehensive iOS development tool.
+
+#### 🆕 Major New Features
+
+##### 📱 iOS Device File Management
+- **AFC Protocol Support** - Direct iOS filesystem access via Apple File Conduit protocol
+  - Real-time device detection and connection management
+  - Complete filesystem browsing and navigation
+  - File upload, download, delete and rename operations
+  - Support for non-jailbroken, rootless and rootful jailbreak modes
+  - Intelligent path mapping and permission handling
+
+##### 🔌 Professional SSH Terminal
+- **Device Auto-Discovery** - Automatically scan USB and Wi-Fi connected iOS devices
+  - USB devices via automatic iproxy port forwarding
+  - Wi-Fi devices via network scanning
+  - Support for manually adding custom devices
+  
+- **Secure Credential Management** - Securely store SSH credentials using system keychain
+  - Automatic save and load of login information
+  - Support for password and key authentication
+  - Credential manager UI for easy management
+  
+- **Multi-Session Support** - Manage multiple SSH connections simultaneously
+  - Tabbed interface for easy session switching
+  - Independent terminal instance for each session
+  - Support for session cloning and quick reconnect
+  
+- **Quick Command Library** - Preset common iOS management commands
+  - System information viewing
+  - Process management
+  - File operations
+  - Security checks
+  - User-defined scripts
+
+#### 🎨 Interface Enhancements
+- **New Device Panel** - Dedicated iOS device management interface
+  - Real-time device information display
+  - File manager integration
+  - Quick action buttons
+  
+- **SSH Terminal Panel** - Theme-aware professional terminal interface
+  - Seamlessly integrated with app theme system
+  - Adaptive light/dark themes
+  - Optimized fonts and color schemes
+
+#### 🔧 Technical Improvements
+- **Modular Architecture** - New independent SSH and device management modules
+  - `src/modules/ssh_terminal/` - SSH terminal implementation
+  - `src/core/ios_filesystem.py` - iOS filesystem abstraction layer
+  - `src/core/device_manager.py` - Device detection and management
+  
+- **Dependency Optimization** - Graceful degradation with optional dependencies
+  - paramiko for SSH connections
+  - pymobiledevice3 for iOS device access
+  - Friendly prompts when dependencies are missing
+
+- **Security Enhancements** - Multi-layer security protection
+  - SSH connection encryption
+  - Secure credential storage
+  - Path validation and permission checks
+
+#### 🐛 Fixes and Optimizations
+- Improved main window tab management
+- Optimized large file transfer performance
+- Enhanced error handling and logging
+- Fixed encoding issues in certain scenarios
+
+### Upgrade Notes
+- New features require additional Python packages:
+  ```bash
+  pip install paramiko pymobiledevice3
+  ```
+- iOS device features require iTunes/Apple Mobile Device Support (Windows)
+- SSH features require jailbroken device with OpenSSH installed
+
+---
+
 ## 📝 v1.0.3 (2025-06-01)
 
 ### Plist Editor & Project Optimization

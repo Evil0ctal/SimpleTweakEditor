@@ -63,7 +63,9 @@ class DeviceScanner(QThread):
                 elif hasattr(device, 'device_name') and device.device_name:
                     device_name = device.device_name
                 else:
-                    device_name = f"iOS Device ({device_id[:8] if len(device_id) > 8 else device_id})"
+                    # 使用设备ID的后8位作为标识，更容易识别
+                    short_id = device_id[-8:] if len(device_id) > 8 else device_id
+                    device_name = f"iOS Device ({short_id})"
                 
                 # 检查是否已经发现过这个设备
                 # 使用设备名称作为去重的关键字，因为同一设备可能有不同的标识符

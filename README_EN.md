@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.3-blue?style=for-the-badge&logo=apple&logoColor=white)
+![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.4-blue?style=for-the-badge&logo=apple&logoColor=white)
 
 [![License](https://img.shields.io/github/license/Evil0ctal/SimpleTweakEditor?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -17,6 +17,8 @@
 🚀 **One-Click Unpack/Repack** | 🎯 **Smart Control Editor** | 🌍 **Cross-Platform** | 📦 **Package Manager** | 🌐 **Multi-Language UI**
 
 🎨 **20+ Themes** | 🖥️ **Interactive Terminal** | 🔒 **Safe Operations** | ⚡ **No dpkg Required (Windows)** | 🎭 **Drag & Drop**
+
+📱 **iOS Device Support** | 🔌 **SSH Terminal** | 📂 **AFC File Manager** | 🔧 **Real-time Device Detection** | 🚀 **File Transfer**
 
 [中文文档](README.md) | [Quick Start](docs/QUICK_START.md) | [Download](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 
@@ -109,6 +111,26 @@
 - **Permission Handling** - Correct Unix permissions even on Windows
 - **Integrity Checks** - Package structure validation prevents corruption
 
+## 🆕 New in Version 1.0.4
+
+### 📱 iOS Device Support
+- **AFC File Management** - Direct iOS filesystem access via AFC protocol
+- **Real-time Device Detection** - Automatically detect connected iOS devices
+- **File Transfer** - Upload, download, delete and rename files
+- **Directory Browsing** - Complete filesystem browsing and navigation
+
+### 🔌 SSH Terminal
+- **Device Scanning** - Auto-scan USB and Wi-Fi connected iOS devices
+- **Credential Management** - Securely store SSH login credentials
+- **Multi-session Support** - Manage multiple SSH connections simultaneously
+- **Quick Commands** - Preset common commands for quick execution
+- **Theme Integration** - Seamlessly integrated with app theme system
+
+### 🛡️ Enhancements
+- **Jailbreak Mode Support** - Auto-detect rootless/rootful jailbreak modes
+- **Improved File Manager** - Enhanced UI and better performance
+- **Better Error Handling** - More detailed error messages and recovery options
+
 ## 🚀 Installation
 
 ### System Requirements
@@ -123,10 +145,10 @@ Download the version for your system from [Releases](https://github.com/Evil0cta
 
 | Platform | Filename | Description |
 |----------|----------|-------------|
-| **Windows** | `SimpleTweakEditor-v1.0.3-Windows-x64.zip` | Extract and run, no installation |
-| **macOS Intel** | `SimpleTweakEditor-v1.0.3-macOS-x64.zip` | For Intel-based Macs |
-| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.3-macOS-Apple-Silicon.zip` | For M1/M2/M3 Macs |
-| **Linux** | `SimpleTweakEditor-v1.0.3-Linux-x64.zip` | Works on most Linux distributions |
+| **Windows** | `SimpleTweakEditor-v1.0.4-Windows-x64.zip` | Extract and run, no installation |
+| **macOS Intel** | `SimpleTweakEditor-v1.0.4-macOS-x64.zip` | For Intel-based Macs |
+| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.4-macOS-Apple-Silicon.zip` | For M1/M2/M3 Macs |
+| **Linux** | `SimpleTweakEditor-v1.0.4-Linux-x64.zip` | Works on most Linux distributions |
 
 #### Run from Source
 ```bash

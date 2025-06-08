@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.3-blue?style=for-the-badge&logo=apple&logoColor=white)
+![SimpleTweakEditor Logo](https://img.shields.io/badge/SimpleTweakEditor-v1.0.4-blue?style=for-the-badge&logo=apple&logoColor=white)
 
 [![License](https://img.shields.io/github/license/Evil0ctal/SimpleTweakEditor?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
@@ -17,6 +17,8 @@
 🚀 **一键解包/重打包** | 🎯 **智能Control编辑** | 🌍 **跨平台运行** | 📦 **包管理器集成** | 🌐 **中英文界面**
 
 🎨 **20+主题** | 🖥️ **交互式终端** | 🔒 **安全操作** | ⚡ **Windows无需dpkg** | 🎭 **拖放支持**
+
+📱 **iOS设备支持** | 🔌 **SSH终端** | 📂 **AFC文件管理** | 🔧 **设备实时检测** | 🚀 **文件传输**
 
 [English](README_EN.md) | [快速开始](docs/QUICK_START.md) | [下载](https://github.com/Evil0ctal/SimpleTweakEditor/releases)
 
@@ -109,6 +111,26 @@
 - **权限管理** - 正确处理Unix文件权限，即使在Windows上
 - **完整性校验** - 验证包结构完整性，防止损坏的包
 
+## 🆕 1.0.4 版本新功能
+
+### 📱 iOS设备支持
+- **AFC文件管理** - 通过AFC协议直接访问iOS设备文件系统
+- **实时设备检测** - 自动检测连接的iOS设备
+- **文件传输** - 支持文件上传、下载、删除和重命名
+- **目录浏览** - 完整的文件系统浏览和导航
+
+### 🔌 SSH终端
+- **设备扫描** - 自动扫描USB和Wi-Fi连接的iOS设备
+- **凭据管理** - 安全存储SSH登录凭据
+- **多会话支持** - 同时管理多个SSH连接
+- **快速命令** - 预设常用命令快速执行
+- **主题集成** - 与应用主题系统完美集成
+
+### 🛡️ 增强功能
+- **越狱模式支持** - 自动检测无根/有根越狱模式
+- **改进的文件管理器** - 增强的UI和更好的性能
+- **更好的错误处理** - 更详细的错误信息和恢复选项
+
 ## 安装 / Installation
 
 ### 系统要求 / System Requirements
@@ -148,10 +170,10 @@ sudo apt-get install dpkg
 
 | 平台 | 文件名 | 说明 |
 |------|--------|------|
-| **Windows** | `SimpleTweakEditor-v1.0.3-Windows-x64.zip` | 解压即用，无需安装 |
-| **macOS Intel** | `SimpleTweakEditor-v1.0.3-macOS-x64.zip` | Intel芯片Mac |
-| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.3-macOS-Apple-Silicon.zip` | M1/M2/M3芯片Mac |
-| **Linux** | `SimpleTweakEditor-v1.0.3-Linux-x64.zip` | 支持大多数Linux发行版 |
+| **Windows** | `SimpleTweakEditor-v1.0.4-Windows-x64.zip` | 解压即用，无需安装 |
+| **macOS Intel** | `SimpleTweakEditor-v1.0.4-macOS-x64.zip` | Intel芯片Mac |
+| **macOS Apple Silicon** | `SimpleTweakEditor-v1.0.4-macOS-Apple-Silicon.zip` | M1/M2/M3芯片Mac |
+| **Linux** | `SimpleTweakEditor-v1.0.4-Linux-x64.zip` | 支持大多数Linux发行版 |
 
 #### 从源代码运行 / Run from Source
 ```bash

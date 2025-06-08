@@ -31,6 +31,7 @@ class TerminalEmulator:
         self.env_vars: Dict[str, str] = {}  # 环境变量
         self.command_history: deque = deque(maxlen=1000)  # 命令历史
         self.history_index = -1
+        self.sudo_password = None  # 存储sudo密码
         
         # 初始化
         self._initialize()
@@ -82,6 +83,10 @@ class TerminalEmulator:
         # 处理export命令
         if command.strip().startswith('export '):
             return self._handle_export(command)
+            
+        # 处理sudo命令
+        if command.strip().startswith('sudo '):
+            return self._handle_sudo(command)
             
         # 构建实际命令（在正确的工作目录执行）
         actual_command = self._build_command(command)
@@ -139,6 +144,33 @@ class TerminalEmulator:
             return "", "", False
         else:
             return "", "export: invalid syntax\n", False
+    
+    def _handle_sudo(self, command: str) -> Tuple[str, str, bool]:
+        """处理sudo命令"""
+        # 获取SSH连接的密码作为sudo密码
+        if hasattr(self.ssh_client, '_connection_info') and self.ssh_client._connection_info:
+            sudo_password = self.ssh_client._connection_info.password
+        else:
+            # 如果无法获取密码，返回错误
+            return "", "sudo: unable to get password\n", False
+        
+        # 构建实际命令
+        actual_command = self._build_command(command)
+        
+        # 使用echo传递密码给sudo
+        # -S选项让sudo从stdin读取密码
+        sudo_command = f"echo '{sudo_password}' | {actual_command}"
+        
+        # 执行命令
+        stdout, stderr = self.ssh_client.execute_command(sudo_command, timeout=60)
+        
+        # 过滤掉密码提示信息
+        if stderr and "[sudo] password for" in stderr:
+            lines = stderr.split('\n')
+            filtered_lines = [line for line in lines if "[sudo] password for" not in line]
+            stderr = '\n'.join(filtered_lines)
+        
+        return stdout, stderr, False
     
     def _build_command(self, command: str) -> str:
         """构建实际要执行的命令"""
@@ -201,3 +233,78 @@ class TerminalEmulator:
     def reset(self):
         """重置终端状态"""
         self._initialize()
+    
+    def get_completions(self, partial_command: str) -> List[str]:
+        """获取命令补全建议"""
+        if not self.ssh_client.is_connected:
+            return []
+        
+        completions = []
+        
+        # 分析命令类型
+        parts = partial_command.split()
+        if not parts:
+            return []
+        
+        # 如果只有一个词，尝试命令补全
+        if len(parts) == 1:
+            # 使用compgen获取命令补全
+            cmd = f"compgen -c {parts[0]}"
+            stdout, _ = self.ssh_client.execute_command(cmd)
+            if stdout:
+                completions = [cmd.strip() for cmd in stdout.strip().split('\n') if cmd.strip()]
+        else:
+            # 路径补全
+            # 获取最后一个参数
+            last_arg = parts[-1]
+            
+            # 检查是否是路径
+            if '/' in last_arg:
+                # 分离目录和文件名部分
+                if last_arg.endswith('/'):
+                    dir_path = last_arg
+                    file_prefix = ""
+                else:
+                    dir_path = os.path.dirname(last_arg)
+                    file_prefix = os.path.basename(last_arg)
+                    if not dir_path:
+                        dir_path = "."
+            else:
+                dir_path = "."
+                file_prefix = last_arg
+            
+            # 构建实际路径
+            if dir_path == ".":
+                actual_dir = self.cwd
+            elif dir_path.startswith("~"):
+                actual_dir = dir_path.replace("~", self.home_dir or "/var/mobile", 1)
+            elif not dir_path.startswith("/"):
+                actual_dir = os.path.join(self.cwd, dir_path)
+            else:
+                actual_dir = dir_path
+            
+            # 列出目录内容
+            cmd = f"cd '{self.cwd}' && ls -1a '{actual_dir}' 2>/dev/null | grep '^{file_prefix}'"
+            stdout, _ = self.ssh_client.execute_command(cmd)
+            
+            if stdout:
+                files = [f.strip() for f in stdout.strip().split('\n') if f.strip()]
+                
+                # 构建完整路径
+                for file in files:
+                    if dir_path == ".":
+                        completion = file
+                    else:
+                        completion = os.path.join(dir_path, file)
+                    
+                    # 检查是否是目录，如果是则添加/
+                    check_cmd = f"cd '{self.cwd}' && test -d '{actual_dir}/{file}' && echo 'dir'"
+                    is_dir_out, _ = self.ssh_client.execute_command(check_cmd)
+                    if is_dir_out.strip() == 'dir':
+                        completion += '/'
+                    
+                    # 替换命令中的最后一个参数
+                    completed_cmd = ' '.join(parts[:-1]) + ' ' + completion
+                    completions.append(completed_cmd)
+        
+        return sorted(list(set(completions)))
