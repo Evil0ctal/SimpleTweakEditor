@@ -18,8 +18,15 @@ notifications.
 
 import subprocess
 import shlex
+import platform
 from PyQt6.QtCore import QThread, pyqtSignal
 from typing import TYPE_CHECKING, Union, List
+
+# Windows subprocess flags to prevent console windows
+if platform.system() == 'Windows':
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
 
 if TYPE_CHECKING:
     from PyQt6.QtCore import pyqtSignal as Signal
@@ -101,17 +108,19 @@ class CommandThread(QThread):
         try:
             # 安全创建子进程 - 永远不使用shell=True
             # command已经在__init__中被安全地转换为列表
-            self.process = subprocess.Popen(
-                self.command,
-                shell=False,  # 永远不使用shell=True，防止命令注入
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1,  # 行缓冲
-                universal_newlines=True,
-                # 添加安全限制
-                start_new_session=True  # 在新的会话中运行，便于清理
-            )
+            kwargs = {
+                'stdout': subprocess.PIPE,
+                'stderr': subprocess.PIPE,
+                'text': True,
+                'bufsize': 1,  # 行缓冲
+                'universal_newlines': True,
+                'shell': False,  # 永远不使用shell=True，防止命令注入
+                'start_new_session': True  # 在新的会话中运行，便于清理
+            }
+            if platform.system() == 'Windows':
+                kwargs['creationflags'] = CREATE_NO_WINDOW
+            
+            self.process = subprocess.Popen(self.command, **kwargs)
 
             # 等待进程完成并获取所有输出
             stdout, stderr = self.process.communicate()

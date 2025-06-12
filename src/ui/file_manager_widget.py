@@ -1234,14 +1234,15 @@ class FileManagerWidget(QDialog):
                 # 如果用户点击了打开文件夹
                 if msg_box.clickedButton() == open_folder_btn:
                     import platform
-                    import subprocess
                     folder_path = os.path.dirname(download_path)
                     try:
                         if platform.system() == 'Darwin':  # macOS
+                            import subprocess
                             subprocess.run(['open', folder_path])
                         elif platform.system() == 'Windows':
                             os.startfile(folder_path)
                         else:  # Linux
+                            import subprocess
                             subprocess.run(['xdg-open', folder_path])
                     except Exception as e:
                         debug(f"Failed to open folder: {e}")
@@ -1900,7 +1901,6 @@ class FileManagerWidget(QDialog):
             return
         
         import tempfile
-        import subprocess
         import platform
         
         filename = os.path.basename(path)
@@ -1920,10 +1920,12 @@ class FileManagerWidget(QDialog):
             if success:
                 try:
                     if platform.system() == 'Darwin':  # macOS
+                        import subprocess
                         subprocess.run(['open', temp_path])
                     elif platform.system() == 'Windows':
                         os.startfile(temp_path)
                     else:  # Linux
+                        import subprocess
                         subprocess.run(['xdg-open', temp_path])
                 except Exception as e:
                     QMessageBox.warning(self, "Error", f"Failed to open file: {e}")

@@ -26,6 +26,12 @@ from .system_utils import set_debian_permissions, get_package_info_from_control,
 from .dpkg_deb import dpkg_deb
 from .security import validate_path, secure_path_join, sanitize_filename, validate_file_size, PathTraversalError
 
+# Windows subprocess flags to prevent console windows
+if platform.system() == 'Windows':
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
+
 
 def find_dpkg_deb():
     """
@@ -54,10 +60,14 @@ def find_dpkg_deb():
     for path in possible_paths:
         try:
             # 尝试运行dpkg-deb --version
-            result = subprocess.run([path, "--version"], 
-                                  capture_output=True, 
-                                  text=True, 
-                                  timeout=5)
+            kwargs = {
+                "capture_output": True,
+                "text": True,
+                "timeout": 5
+            }
+            if platform.system() == "Windows":
+                kwargs["creationflags"] = CREATE_NO_WINDOW
+            result = subprocess.run([path, "--version"], **kwargs)
             if result.returncode == 0:
                 return path
         except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
@@ -65,14 +75,12 @@ def find_dpkg_deb():
     
     # 最后尝试使用which/where命令
     try:
+        kwargs = {"capture_output": True, "text": True}
         if platform.system() == "Windows":
-            result = subprocess.run(["where", "dpkg-deb"], 
-                                  capture_output=True, 
-                                  text=True)
+            kwargs["creationflags"] = CREATE_NO_WINDOW
+            result = subprocess.run(["where", "dpkg-deb"], **kwargs)
         else:
-            result = subprocess.run(["which", "dpkg-deb"], 
-                                  capture_output=True, 
-                                  text=True)
+            result = subprocess.run(["which", "dpkg-deb"], **kwargs)
         
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip().split('\n')[0]
@@ -97,7 +105,8 @@ def find_wsl_dpkg_deb():
         result = subprocess.run(["wsl", "--status"], 
                               capture_output=True, 
                               text=True, 
-                              timeout=5)
+                              timeout=5,
+                              creationflags=CREATE_NO_WINDOW)
         if result.returncode != 0:
             return None, None
         
@@ -105,7 +114,8 @@ def find_wsl_dpkg_deb():
         result = subprocess.run(["wsl", "which", "dpkg-deb"], 
                               capture_output=True, 
                               text=True, 
-                              timeout=5)
+                              timeout=5,
+                              creationflags=CREATE_NO_WINDOW)
         
         if result.returncode == 0 and result.stdout.strip():
             return "wsl", result.stdout.strip()
@@ -213,9 +223,12 @@ def unpack_deb_file(deb_path, output_dir):
                 if dpkg_deb_path:
                     try:
                         # 提取文件系统内容
+                        kwargs = {"capture_output": True, "text": True}
+                        if platform.system() == "Windows":
+                            kwargs["creationflags"] = CREATE_NO_WINDOW
                         result1 = subprocess.run(
                             [dpkg_deb_path, "-x", deb_path, target_dir],
-                            capture_output=True, text=True
+                            **kwargs
                         )
 
                         # 提取control文件到DEBIAN/
@@ -223,7 +236,7 @@ def unpack_deb_file(deb_path, output_dir):
                         os.makedirs(debian_dir, exist_ok=True)
                         result2 = subprocess.run(
                             [dpkg_deb_path, "-e", deb_path, debian_dir],
-                            capture_output=True, text=True
+                            **kwargs
                         )
 
                         # 检查解包结果
@@ -267,18 +280,21 @@ def unpack_deb_file(deb_path, output_dir):
                         # 转换Windows路径为WSL路径
                         wsl_deb_path = subprocess.run(
                             ["wsl", "wslpath", "-u", deb_path],
-                            capture_output=True, text=True
+                            capture_output=True, text=True,
+                            creationflags=CREATE_NO_WINDOW
                         ).stdout.strip()
                         
                         wsl_target_dir = subprocess.run(
                             ["wsl", "wslpath", "-u", target_dir],
-                            capture_output=True, text=True
+                            capture_output=True, text=True,
+                            creationflags=CREATE_NO_WINDOW
                         ).stdout.strip()
                         
                         # 提取文件系统内容
                         result1 = subprocess.run(
                             ["wsl", dpkg_path, "-x", wsl_deb_path, wsl_target_dir],
-                            capture_output=True, text=True
+                            capture_output=True, text=True,
+                            creationflags=CREATE_NO_WINDOW
                         )
 
                         # 提取control文件到DEBIAN/
@@ -286,12 +302,14 @@ def unpack_deb_file(deb_path, output_dir):
                         os.makedirs(debian_dir, exist_ok=True)
                         wsl_debian_dir = subprocess.run(
                             ["wsl", "wslpath", "-u", debian_dir],
-                            capture_output=True, text=True
+                            capture_output=True, text=True,
+                            creationflags=CREATE_NO_WINDOW
                         ).stdout.strip()
                         
                         result2 = subprocess.run(
                             ["wsl", dpkg_path, "-e", wsl_deb_path, wsl_debian_dir],
-                            capture_output=True, text=True
+                            capture_output=True, text=True,
+                            creationflags=CREATE_NO_WINDOW
                         )
 
                         if result1.returncode == 0 and result2.returncode == 0:
@@ -398,7 +416,10 @@ def pack_folder_to_deb(folder_path, output_path):
                         build_cmd = [dpkg_deb_path, "--root-owner-group", "-b", folder_path, output_path]
 
                         # 执行打包命令
-                        result = subprocess.run(build_cmd, capture_output=True, text=True)
+                        kwargs = {"capture_output": True, "text": True}
+                        if platform.system() == "Windows":
+                            kwargs["creationflags"] = CREATE_NO_WINDOW
+                        result = subprocess.run(build_cmd, **kwargs)
 
                         if result.returncode == 0:
                             # 收集输出消息
@@ -441,18 +462,21 @@ def pack_folder_to_deb(folder_path, output_path):
                         # 转换Windows路径为WSL路径
                         wsl_folder_path = subprocess.run(
                             ["wsl", "wslpath", "-u", folder_path],
-                            capture_output=True, text=True
+                            capture_output=True, text=True,
+                            creationflags=CREATE_NO_WINDOW
                         ).stdout.strip()
                         
                         wsl_output_path = subprocess.run(
                             ["wsl", "wslpath", "-u", output_path],
-                            capture_output=True, text=True
+                            capture_output=True, text=True,
+                            creationflags=CREATE_NO_WINDOW
                         ).stdout.strip()
                         
                         # 构建dpkg-deb命令
                         result = subprocess.run(
                             ["wsl", dpkg_path, "--root-owner-group", "-b", wsl_folder_path, wsl_output_path],
-                            capture_output=True, text=True
+                            capture_output=True, text=True,
+                            creationflags=CREATE_NO_WINDOW
                         )
 
                         if result.returncode == 0:

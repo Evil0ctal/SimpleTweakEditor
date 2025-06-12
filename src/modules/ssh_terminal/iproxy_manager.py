@@ -17,7 +17,14 @@ import socket
 import threading
 import time
 import logging
+import platform
 from typing import Dict, Optional, Tuple
+
+# Windows subprocess flags to prevent console windows
+if platform.system() == 'Windows':
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +74,13 @@ class IProxyManager:
     def _check_iproxy_available(self) -> bool:
         """检查iproxy是否可用"""
         try:
-            result = subprocess.run(['which', 'iproxy'], 
-                                  capture_output=True, 
-                                  text=True)
+            # On Windows, use 'where' instead of 'which'
+            cmd = 'where' if platform.system() == 'Windows' else 'which'
+            kwargs = {'capture_output': True, 'text': True}
+            if platform.system() == 'Windows':
+                kwargs['creationflags'] = CREATE_NO_WINDOW
+            
+            result = subprocess.run([cmd, 'iproxy'], **kwargs)
             if result.returncode == 0:
                 logger.info("iproxy is available")
                 return True
@@ -126,12 +137,15 @@ class IProxyManager:
                 
                 logger.info(f"Starting iproxy: {' '.join(cmd)}")
                 
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    stdin=subprocess.PIPE
-                )
+                kwargs = {
+                    'stdout': subprocess.PIPE,
+                    'stderr': subprocess.PIPE,
+                    'stdin': subprocess.PIPE
+                }
+                if platform.system() == 'Windows':
+                    kwargs['creationflags'] = CREATE_NO_WINDOW
+                
+                process = subprocess.Popen(cmd, **kwargs)
                 
                 # 等待进程启动
                 time.sleep(3.0)  # 增加等待时间到SSH直接测试中使用的值

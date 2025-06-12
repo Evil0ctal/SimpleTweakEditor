@@ -15,10 +15,17 @@ Analyzes jailbreak compatibility of deb files
 import os
 import tempfile
 import subprocess
+import platform
 from typing import Tuple, Optional
 from ..utils.debug_logger import debug, info, warning
 from ..utils.dpkg_deb import DpkgDeb
 from ..utils.system_utils import check_dpkg_available
+
+# Windows subprocess flags to prevent console windows
+if platform.system() == 'Windows':
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
 
 
 class DebAnalyzer:
@@ -108,11 +115,10 @@ class DebAnalyzer:
         try:
             if check_dpkg_available():
                 # 使用 dpkg-deb 提取信息
-                result = subprocess.run(
-                    ['dpkg-deb', '-f', deb_path],
-                    capture_output=True,
-                    text=True
-                )
+                kwargs = {'capture_output': True, 'text': True}
+                if platform.system() == 'Windows':
+                    kwargs['creationflags'] = CREATE_NO_WINDOW
+                result = subprocess.run(['dpkg-deb', '-f', deb_path], **kwargs)
                 if result.returncode == 0:
                     return DebAnalyzer._parse_control_content(result.stdout)
             else:

@@ -19,6 +19,12 @@ import os
 import platform
 import subprocess
 
+# Windows subprocess flags to prevent console windows
+if platform.system() == 'Windows':
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
+
 
 def open_folder(path):
     """在文件管理器中打开文件夹"""
@@ -55,8 +61,10 @@ def open_file(path):
 def check_dpkg_available():
     """检查dpkg-deb工具是否可用"""
     try:
-        result = subprocess.run(["dpkg-deb", "--version"],
-                                capture_output=True, text=True)
+        kwargs = {"capture_output": True, "text": True}
+        if platform.system() == "Windows":
+            kwargs["creationflags"] = CREATE_NO_WINDOW
+        result = subprocess.run(["dpkg-deb", "--version"], **kwargs)
         return result.returncode == 0
     except FileNotFoundError:
         return False
@@ -142,8 +150,10 @@ def is_valid_deb_file(file_path):
 
     try:
         # 尝试使用dpkg-deb检查文件
-        result = subprocess.run(["dpkg-deb", "--info", file_path],
-                                capture_output=True, text=True)
+        kwargs = {"capture_output": True, "text": True}
+        if platform.system() == "Windows":
+            kwargs["creationflags"] = CREATE_NO_WINDOW
+        result = subprocess.run(["dpkg-deb", "--info", file_path], **kwargs)
         return result.returncode == 0
     except Exception:
         # 如果dpkg-deb不可用，只检查文件扩展名

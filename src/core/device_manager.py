@@ -21,6 +21,12 @@ import threading
 import queue
 from ..utils.debug_logger import debug
 
+# Windows subprocess flags to prevent console windows
+if platform.system() == 'Windows':
+    CREATE_NO_WINDOW = 0x08000000
+else:
+    CREATE_NO_WINDOW = 0
+
 # Import pymobiledevice3 modules
 try:
     from pymobiledevice3.lockdown import LockdownClient
@@ -152,7 +158,8 @@ class DeviceManager:
             # Windows: Check for PowerShell availability
             try:
                 result = subprocess.run(['powershell', '-Command', 'echo test'], 
-                                      capture_output=True, text=True)
+                                      capture_output=True, text=True,
+                                      creationflags=CREATE_NO_WINDOW)
                 return result.returncode == 0
             except:
                 return False
@@ -315,7 +322,8 @@ class DeviceManager:
                 ['ioreg', '-p', 'IOUSB', '-l', '-w', '0'],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
+                creationflags=CREATE_NO_WINDOW
             )
             
             if result.returncode == 0:
@@ -355,7 +363,8 @@ class DeviceManager:
                     ['system_profiler', 'SPUSBDataType', '-json'],
                     capture_output=True,
                     text=True,
-                    timeout=5
+                    timeout=5,
+                    creationflags=CREATE_NO_WINDOW
                 )
                 
                 if result.returncode == 0:
@@ -414,7 +423,8 @@ class DeviceManager:
                 ['powershell', '-Command', ps_script],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
+                creationflags=CREATE_NO_WINDOW
             )
             
             if result.returncode == 0 and result.stdout:
@@ -442,7 +452,8 @@ class DeviceManager:
                      'get', 'Name,DeviceID', '/format:list'],
                     capture_output=True,
                     text=True,
-                    timeout=10
+                    timeout=10,
+                    creationflags=CREATE_NO_WINDOW
                 )
                 
                 if result.returncode == 0:
@@ -470,7 +481,8 @@ class DeviceManager:
                 ['lsusb', '-v'],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
+                creationflags=CREATE_NO_WINDOW
             )
             
             if result.returncode == 0:
@@ -543,7 +555,8 @@ class DeviceManager:
                 ['ioreg', '-p', 'IOUSB', '-l', '-w', '0'],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
+                creationflags=CREATE_NO_WINDOW
             )
             
             if result.returncode == 0:
@@ -593,7 +606,8 @@ class DeviceManager:
                     ['system_profiler', 'SPUSBDataType', '-detailLevel', 'full'],
                     capture_output=True,
                     text=True,
-                    timeout=5
+                    timeout=5,
+                    creationflags=CREATE_NO_WINDOW
                 )
                 
                 if result2.returncode == 0 and udid in result2.stdout:
