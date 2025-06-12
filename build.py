@@ -129,7 +129,9 @@ class UniversalBuilder:
             "PyQt6": "PyQt6",
             "Pillow": "PIL",
             "httpx": "httpx",
-            "qt-material": "qt_material"
+            "qt-material": "qt_material",
+            "pymobiledevice3": "pymobiledevice3",
+            "paramiko": "paramiko"
         }
         
         missing_packages = []
@@ -171,6 +173,10 @@ class UniversalBuilder:
             "--hidden-import", "httpx",
             "--hidden-import", "qt_material",
             "--hidden-import", "qt_material.resources",
+            "--hidden-import", "pymobiledevice3",
+            "--hidden-import", "pymobiledevice3.tcp_forwarder",
+            "--hidden-import", "pymobiledevice3.lockdown",
+            "--hidden-import", "paramiko",
         ]
         
         # 添加图标
